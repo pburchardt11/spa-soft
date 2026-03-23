@@ -1,18 +1,25 @@
 "use client";
 
-import Link from "next/link";
 import { Sparkles } from "lucide-react";
-import { signIn } from "@/lib/actions/auth";
 import { useState } from "react";
+import { updatePassword } from "@/lib/actions/auth";
 
-export default function LoginPage() {
+export default function ResetPasswordPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(formData: FormData) {
+    const password = formData.get("password") as string;
+    const confirm = formData.get("confirm") as string;
+
+    if (password !== confirm) {
+      setError("Passwords do not match");
+      return;
+    }
+
     setLoading(true);
     setError(null);
-    const result = await signIn(formData);
+    const result = await updatePassword(formData);
     if (result?.error) {
       setError(result.error);
       setLoading(false);
@@ -27,9 +34,9 @@ export default function LoginPage() {
             <Sparkles className="h-7 w-7 text-violet-600" />
             <span className="text-xl font-bold">SpaSoft</span>
           </div>
-          <h1 className="text-2xl font-bold">Welcome back</h1>
+          <h1 className="text-2xl font-bold">Set new password</h1>
           <p className="text-sm text-gray-500 mt-1">
-            Log in to your SpaSoft account
+            Enter your new password below
           </p>
         </div>
 
@@ -42,55 +49,39 @@ export default function LoginPage() {
           <form action={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Email
-              </label>
-              <input
-                name="email"
-                type="email"
-                required
-                placeholder="you@yourspa.com"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Password
+                New Password
               </label>
               <input
                 name="password"
                 type="password"
                 required
+                minLength={6}
                 placeholder="••••••••"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
               />
             </div>
-            <div className="flex justify-end">
-              <Link
-                href="/forgot-password"
-                className="text-xs text-violet-600 hover:text-violet-700"
-              >
-                Forgot your password?
-              </Link>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Confirm Password
+              </label>
+              <input
+                name="confirm"
+                type="password"
+                required
+                minLength={6}
+                placeholder="••••••••"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+              />
             </div>
             <button
               type="submit"
               disabled={loading}
               className="w-full bg-violet-600 text-white py-2.5 rounded-lg text-sm font-medium hover:bg-violet-700 transition disabled:opacity-50"
             >
-              {loading ? "Logging in..." : "Log in"}
+              {loading ? "Updating..." : "Update password"}
             </button>
           </form>
         </div>
-
-        <p className="text-center text-sm text-gray-500 mt-4">
-          Don&apos;t have an account?{" "}
-          <Link
-            href="/signup"
-            className="text-violet-600 hover:text-violet-700 font-medium"
-          >
-            Start free trial
-          </Link>
-        </p>
       </div>
     </div>
   );
