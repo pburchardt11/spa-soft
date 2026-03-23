@@ -71,7 +71,7 @@ export async function resetPassword(formData: FormData) {
   const email = formData.get("email") as string;
 
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${process.env.NEXT_PUBLIC_APP_URL || "https://www.spa-soft.com"}/auth/confirm`,
+    redirectTo: `${process.env.NEXT_PUBLIC_APP_URL || "https://www.spa-soft.com"}/auth/callback?next=/reset-password`,
   });
 
   if (error) {
