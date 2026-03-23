@@ -1,7 +1,24 @@
+"use client";
+
 import Link from "next/link";
 import { Sparkles } from "lucide-react";
+import { signIn } from "@/lib/actions/auth";
+import { useState } from "react";
 
 export default function LoginPage() {
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  async function handleSubmit(formData: FormData) {
+    setLoading(true);
+    setError(null);
+    const result = await signIn(formData);
+    if (result?.error) {
+      setError(result.error);
+      setLoading(false);
+    }
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
       <div className="w-full max-w-sm">
@@ -17,13 +34,20 @@ export default function LoginPage() {
         </div>
 
         <div className="bg-white rounded-xl border border-gray-200 p-6">
-          <form className="space-y-4">
+          {error && (
+            <div className="mb-4 p-3 text-sm text-red-700 bg-red-50 rounded-lg">
+              {error}
+            </div>
+          )}
+          <form action={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Email
               </label>
               <input
+                name="email"
                 type="email"
+                required
                 placeholder="you@yourspa.com"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
               />
@@ -33,29 +57,20 @@ export default function LoginPage() {
                 Password
               </label>
               <input
+                name="password"
                 type="password"
+                required
                 placeholder="••••••••"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
               />
             </div>
-            <div className="flex items-center justify-between text-sm">
-              <label className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  className="h-3.5 w-3.5 rounded border-gray-300 text-violet-600"
-                />
-                <span className="text-gray-600">Remember me</span>
-              </label>
-              <a href="#" className="text-violet-600 hover:text-violet-700">
-                Forgot password?
-              </a>
-            </div>
-            <Link
-              href="/dashboard"
-              className="w-full block text-center bg-violet-600 text-white py-2.5 rounded-lg text-sm font-medium hover:bg-violet-700 transition"
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-violet-600 text-white py-2.5 rounded-lg text-sm font-medium hover:bg-violet-700 transition disabled:opacity-50"
             >
-              Log in
-            </Link>
+              {loading ? "Logging in..." : "Log in"}
+            </button>
           </form>
         </div>
 

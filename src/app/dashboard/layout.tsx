@@ -1,13 +1,31 @@
 import Sidebar from "@/components/sidebar";
+import { createClient } from "@/lib/supabase/server";
 
-export default function DashboardLayout({
+export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  let businessName = "My Spa";
+  if (user) {
+    const { data: staffRow } = await supabase
+      .from("staff")
+      .select("business_id, businesses(name)")
+      .eq("auth_user_id", user.id)
+      .single();
+
+    if (staffRow?.businesses) {
+      const biz = staffRow.businesses as unknown as { name: string };
+      businessName = biz.name;
+    }
+  }
+
   return (
     <div className="flex min-h-screen">
-      <Sidebar />
+      <Sidebar businessName={businessName} userEmail={user?.email} />
       <main className="flex-1 bg-gray-50 overflow-auto">{children}</main>
     </div>
   );

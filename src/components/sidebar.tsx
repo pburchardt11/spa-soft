@@ -12,6 +12,7 @@ import {
   Sparkles,
   LogOut,
 } from "lucide-react";
+import { signOut } from "@/lib/actions/auth";
 
 const nav = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -22,7 +23,7 @@ const nav = [
   { href: "/dashboard/settings", label: "Settings", icon: Settings },
 ];
 
-export default function Sidebar() {
+export default function Sidebar({ businessName, userEmail }: { businessName?: string; userEmail?: string }) {
   const pathname = usePathname();
 
   return (
@@ -55,20 +56,22 @@ export default function Sidebar() {
       <div className="px-3 py-4 border-t border-gray-800">
         <div className="flex items-center gap-3 px-3 py-2">
           <div className="h-8 w-8 rounded-full bg-violet-600 flex items-center justify-center text-sm font-bold">
-            S
+            {(businessName || "S")[0].toUpperCase()}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium truncate">Serenity Spa</p>
-            <p className="text-xs text-gray-500 truncate">owner@serenity.com</p>
+            <p className="text-sm font-medium truncate">{businessName || "My Spa"}</p>
+            <p className="text-xs text-gray-500 truncate">{userEmail || ""}</p>
           </div>
         </div>
-        <Link
-          href="/"
-          className="flex items-center gap-3 px-3 py-2 mt-1 text-sm text-gray-400 hover:text-white rounded-lg hover:bg-gray-800 transition"
-        >
-          <LogOut className="h-4 w-4" />
-          Log out
-        </Link>
+        <form action={signOut}>
+          <button
+            type="submit"
+            className="flex items-center gap-3 px-3 py-2 mt-1 text-sm text-gray-400 hover:text-white rounded-lg hover:bg-gray-800 transition w-full"
+          >
+            <LogOut className="h-4 w-4" />
+            Log out
+          </button>
+        </form>
       </div>
     </aside>
   );

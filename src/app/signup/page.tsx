@@ -1,7 +1,24 @@
+"use client";
+
 import Link from "next/link";
 import { Sparkles } from "lucide-react";
+import { signUp } from "@/lib/actions/auth";
+import { useState } from "react";
 
 export default function SignupPage() {
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  async function handleSubmit(formData: FormData) {
+    setLoading(true);
+    setError(null);
+    const result = await signUp(formData);
+    if (result?.error) {
+      setError(result.error);
+      setLoading(false);
+    }
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
       <div className="w-full max-w-sm">
@@ -17,13 +34,20 @@ export default function SignupPage() {
         </div>
 
         <div className="bg-white rounded-xl border border-gray-200 p-6">
-          <form className="space-y-4">
+          {error && (
+            <div className="mb-4 p-3 text-sm text-red-700 bg-red-50 rounded-lg">
+              {error}
+            </div>
+          )}
+          <form action={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Business Name
               </label>
               <input
+                name="businessName"
                 type="text"
+                required
                 placeholder="Your spa name"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
               />
@@ -33,7 +57,9 @@ export default function SignupPage() {
                 Your Name
               </label>
               <input
+                name="fullName"
                 type="text"
+                required
                 placeholder="Full name"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
               />
@@ -43,7 +69,9 @@ export default function SignupPage() {
                 Email
               </label>
               <input
+                name="email"
                 type="email"
+                required
                 placeholder="you@yourspa.com"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
               />
@@ -53,17 +81,21 @@ export default function SignupPage() {
                 Password
               </label>
               <input
+                name="password"
                 type="password"
+                required
+                minLength={6}
                 placeholder="Create a password"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
               />
             </div>
-            <Link
-              href="/dashboard"
-              className="w-full block text-center bg-violet-600 text-white py-2.5 rounded-lg text-sm font-medium hover:bg-violet-700 transition"
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-violet-600 text-white py-2.5 rounded-lg text-sm font-medium hover:bg-violet-700 transition disabled:opacity-50"
             >
-              Create account
-            </Link>
+              {loading ? "Creating account..." : "Create account"}
+            </button>
             <p className="text-xs text-gray-500 text-center">
               By signing up, you agree to our Terms of Service and Privacy
               Policy.
