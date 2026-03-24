@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Save } from "lucide-react";
+import { Save, Copy, ExternalLink } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 export default function SettingsClient({ business }: { business: Record<string, string> | null }) {
@@ -13,6 +13,8 @@ export default function SettingsClient({ business }: { business: Record<string, 
   const [currency, setCurrency] = useState(business?.currency || "USD");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const bookingUrl = business?.id ? `https://www.spa-soft.com/book?id=${business.id}` : "";
 
   async function handleSave() {
     if (!business?.id) return;
@@ -35,6 +37,42 @@ export default function SettingsClient({ business }: { business: Record<string, 
           Manage your business profile and preferences
         </p>
       </div>
+
+      {/* Booking Link */}
+      {bookingUrl && (
+        <div className="bg-violet-50 border border-violet-200 rounded-xl p-6 mb-6">
+          <h2 className="font-semibold mb-2">Online Booking Page</h2>
+          <p className="text-sm text-gray-600 mb-3">
+            Share this link with your clients so they can book appointments online.
+          </p>
+          <div className="flex items-center gap-2">
+            <input
+              type="text"
+              readOnly
+              value={bookingUrl}
+              className="flex-1 px-3 py-2 bg-white border border-violet-300 rounded-lg text-sm text-gray-700"
+            />
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(bookingUrl);
+                setCopied(true);
+                setTimeout(() => setCopied(false), 2000);
+              }}
+              className="flex items-center gap-1.5 px-3 py-2 bg-violet-600 text-white rounded-lg text-sm font-medium hover:bg-violet-700 transition"
+            >
+              <Copy className="h-4 w-4" />
+              {copied ? "Copied!" : "Copy"}
+            </button>
+            <a
+              href={bookingUrl}
+              target="_blank"
+              className="flex items-center gap-1.5 px-3 py-2 border border-violet-300 rounded-lg text-sm font-medium text-violet-600 hover:bg-violet-50 transition"
+            >
+              <ExternalLink className="h-4 w-4" /> Open
+            </a>
+          </div>
+        </div>
+      )}
 
       {/* Business info */}
       <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">

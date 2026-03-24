@@ -11,6 +11,9 @@ import {
   Settings,
   Sparkles,
   LogOut,
+  UserCog,
+  Scissors,
+  ExternalLink,
 } from "lucide-react";
 import { signOut } from "@/lib/actions/auth";
 
@@ -18,6 +21,8 @@ const nav = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/dashboard/bookings", label: "Bookings", icon: Calendar },
   { href: "/dashboard/clients", label: "Clients", icon: Users },
+  { href: "/dashboard/staff", label: "Staff", icon: UserCog },
+  { href: "/dashboard/services", label: "Services", icon: Scissors },
   { href: "/dashboard/payments", label: "Payments", icon: CreditCard },
   { href: "/dashboard/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/dashboard/settings", label: "Settings", icon: Settings },
@@ -51,6 +56,16 @@ export default function Sidebar({ businessName, userEmail }: { businessName?: st
             </Link>
           );
         })}
+        <div className="mt-4 pt-4 border-t border-gray-800">
+          <a
+            href="/book"
+            target="_blank"
+            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-400 hover:text-white hover:bg-gray-800 transition"
+          >
+            <ExternalLink className="h-4.5 w-4.5" />
+            Booking Page
+          </a>
+        </div>
       </nav>
 
       <div className="px-3 py-4 border-t border-gray-800">
