@@ -23,6 +23,7 @@ export default function ClientsClient({
   const [search, setSearch] = useState("");
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
+  const [modalError, setModalError] = useState<string | null>(null);
 
   const allTags = Array.from(
     new Set(initialClients.flatMap((c) => c.tags))
@@ -183,10 +184,21 @@ export default function ClientsClient({
                 <X className="h-5 w-5 text-gray-400" />
               </button>
             </div>
+            {modalError && (
+              <div className="mb-4 p-3 text-sm text-red-700 bg-red-50 rounded-lg">
+                {modalError}
+              </div>
+            )}
             <form
               action={async (formData) => {
-                await createClientAction(formData);
-                setShowModal(false);
+                setModalError(null);
+                const result = await createClientAction(formData);
+                if (result?.error) {
+                  setModalError(result.error);
+                } else {
+                  setShowModal(false);
+                  window.location.reload();
+                }
               }}
               className="space-y-4"
             >
