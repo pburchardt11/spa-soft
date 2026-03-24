@@ -97,8 +97,10 @@ export default function SignupPage() {
               {loading ? "Creating account..." : "Create account"}
             </button>
             <p className="text-xs text-gray-500 text-center">
-              By signing up, you agree to our Terms of Service and Privacy
-              Policy.
+              By signing up, you agree to our{" "}
+              <Link href="/terms" className="text-violet-600 hover:underline">
+                Terms of Service
+              </Link>.
             </p>
           </form>
         </div>
