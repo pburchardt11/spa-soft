@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { getBusinessId } from "./helpers";
 
 export async function getBookings(date?: string) {
   const supabase = await createClient();
@@ -25,13 +26,8 @@ export async function getBookings(date?: string) {
 export async function createBooking(formData: FormData) {
   const supabase = await createClient();
 
-  const { data: staffRow } = await supabase
-    .from("staff")
-    .select("business_id")
-    .eq("auth_user_id", (await supabase.auth.getUser()).data.user?.id)
-    .single();
-
-  if (!staffRow) return { error: "No business found" };
+  const businessId = await getBusinessId();
+  if (!businessId) return { error: "No business found" };
 
   const serviceId = formData.get("service_id") as string;
   const { data: service } = await supabase
@@ -46,7 +42,7 @@ export async function createBooking(formData: FormData) {
   ).toISOString();
 
   const { error } = await supabase.from("bookings").insert({
-    business_id: staffRow.business_id,
+    business_id: businessId,
     client_id: formData.get("client_id") as string,
     staff_id: formData.get("staff_id") as string,
     service_id: serviceId,

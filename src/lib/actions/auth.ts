@@ -2,15 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { createServerClient } from "@supabase/ssr";
-
-function getAdminClient() {
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { cookies: { getAll: () => [], setAll: () => {} } }
-  );
-}
+import { getAdminClient } from "./helpers";
 
 export async function signUp(formData: FormData) {
   const supabase = await createClient();
@@ -34,7 +26,7 @@ export async function signUp(formData: FormData) {
 
   if (authData.user) {
     // Use admin client to bypass RLS for initial setup
-    const admin = getAdminClient();
+    const admin = await getAdminClient();
 
     // Create business
     const { data: business, error: bizError } = await admin

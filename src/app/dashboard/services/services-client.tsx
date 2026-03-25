@@ -14,12 +14,21 @@ type Service = {
   active: boolean;
 };
 
-const categories = ["Massage", "Facial", "Wellness", "Body", "Hair", "Nails", "Other"];
+const defaultCategories = ["Massage", "Facial", "Wellness", "Body", "Hair", "Nails", "Other"];
 
 export default function ServicesClient({ initialServices }: { initialServices: Service[] }) {
   const [showModal, setShowModal] = useState(false);
   const [modalError, setModalError] = useState<string | null>(null);
   const [editingService, setEditingService] = useState<Service | null>(null);
+  const [customCategory, setCustomCategory] = useState("");
+
+  // Derive categories from existing services + defaults
+  const existingCategories = Array.from(
+    new Set(initialServices.map((s) => s.category).filter(Boolean) as string[])
+  );
+  const categories = Array.from(
+    new Set([...existingCategories, ...defaultCategories])
+  ).sort();
 
   function openAdd() {
     setEditingService(null);
@@ -171,12 +180,20 @@ export default function ServicesClient({ initialServices }: { initialServices: S
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
-                <select name="category" defaultValue={editingService?.category || ""} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500">
-                  <option value="">Select category...</option>
+                <input
+                  name="category"
+                  type="text"
+                  list="category-options"
+                  defaultValue={editingService?.category || ""}
+                  placeholder="Select or type a new category"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+                />
+                <datalist id="category-options">
                   {categories.map((c) => (
-                    <option key={c} value={c}>{c}</option>
+                    <option key={c} value={c} />
                   ))}
-                </select>
+                </datalist>
+                <p className="text-xs text-gray-400 mt-1">Pick from the list or type a new category name</p>
               </div>
               {editingService && (
                 <div className="flex items-center gap-2">

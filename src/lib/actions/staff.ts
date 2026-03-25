@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { getBusinessId } from "./helpers";
 
 export async function getStaff() {
   const supabase = await createClient();
@@ -11,18 +12,6 @@ export async function getStaff() {
     .order("name");
   if (error) throw error;
   return data;
-}
-
-async function getBusinessId() {
-  const supabase = await createClient();
-  const { data: user } = await supabase.auth.getUser();
-  if (!user.user) return null;
-  const { data: staffRow } = await supabase
-    .from("staff")
-    .select("business_id")
-    .eq("auth_user_id", user.user.id)
-    .single();
-  return staffRow?.business_id || null;
 }
 
 export async function createStaffAction(formData: FormData) {

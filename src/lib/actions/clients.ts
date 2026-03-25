@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { getBusinessId } from "./helpers";
 
 export async function getClients() {
   const supabase = await createClient();
@@ -68,13 +69,8 @@ export async function getClientWithStats() {
 export async function createClientAction(formData: FormData) {
   const supabase = await createClient();
 
-  const { data: staffRow } = await supabase
-    .from("staff")
-    .select("business_id")
-    .eq("auth_user_id", (await supabase.auth.getUser()).data.user?.id)
-    .single();
-
-  if (!staffRow) return { error: "No business found" };
+  const businessId = await getBusinessId();
+  if (!businessId) return { error: "No business found" };
 
   const tags = (formData.get("tags") as string)
     ?.split(",")
@@ -82,7 +78,7 @@ export async function createClientAction(formData: FormData) {
     .filter(Boolean) || [];
 
   const { error } = await supabase.from("clients").insert({
-    business_id: staffRow.business_id,
+    business_id: businessId,
     name: formData.get("name") as string,
     email: (formData.get("email") as string) || null,
     phone: (formData.get("phone") as string) || null,

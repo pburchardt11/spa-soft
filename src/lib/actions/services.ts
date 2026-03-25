@@ -2,18 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-
-async function getBusinessId() {
-  const supabase = await createClient();
-  const { data: user } = await supabase.auth.getUser();
-  if (!user.user) return null;
-  const { data: staffRow } = await supabase
-    .from("staff")
-    .select("business_id")
-    .eq("auth_user_id", user.user.id)
-    .single();
-  return staffRow?.business_id || null;
-}
+import { getBusinessId } from "./helpers";
 
 export async function getServices() {
   const supabase = await createClient();
