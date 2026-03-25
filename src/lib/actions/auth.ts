@@ -60,11 +60,10 @@ export async function signUp(formData: FormData) {
       return { error: staffError.message };
     }
 
-    // Seed demo data
-    await admin.rpc("seed_demo_data", { p_business_id: business.id });
+    // No demo data — user will set up their own services and staff
   }
 
-  redirect("/dashboard");
+  redirect("/dashboard/welcome");
 }
 
 export async function signIn(formData: FormData) {

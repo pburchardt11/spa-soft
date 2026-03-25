@@ -1,4 +1,5 @@
 import Link from "next/link";
+import DemoButton from "@/components/demo-button";
 import {
   Calendar,
   Users,
@@ -98,12 +99,7 @@ export default function LandingPage() {
           >
             Get started free <ArrowRight className="h-4 w-4" />
           </Link>
-          <Link
-            href="/dashboard"
-            className="inline-flex items-center justify-center gap-2 border border-gray-300 font-medium px-6 py-3 rounded-lg hover:bg-gray-50 transition text-base"
-          >
-            View demo
-          </Link>
+          <DemoButton />
         </div>
         <p className="mt-3 text-xs text-gray-500">
           No credit card required &middot; 14-day free trial
