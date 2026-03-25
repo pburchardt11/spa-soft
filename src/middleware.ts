@@ -2,9 +2,10 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
 export async function middleware(request: NextRequest) {
-  const code = request.nextUrl.searchParams.get("code");
+  const { pathname, searchParams } = request.nextUrl;
 
   // Handle Supabase auth code (password reset flow)
+  const code = searchParams.get("code");
   if (code) {
     const redirectUrl = new URL("/reset-password", request.url);
     let response = NextResponse.redirect(redirectUrl);
@@ -34,13 +35,21 @@ export async function middleware(request: NextRequest) {
     if (!error) {
       return response;
     }
-    // If code exchange failed, redirect to forgot-password to try again
     return NextResponse.redirect(
       new URL("/forgot-password?error=expired", request.url)
     );
   }
 
-  // Normal session handling for protected routes
+  // Only check auth for dashboard, login, signup routes
+  if (
+    !pathname.startsWith("/dashboard") &&
+    pathname !== "/login" &&
+    pathname !== "/signup"
+  ) {
+    return NextResponse.next();
+  }
+
+  // Session handling for protected routes
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(
@@ -68,15 +77,11 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user && request.nextUrl.pathname.startsWith("/dashboard")) {
+  if (!user && pathname.startsWith("/dashboard")) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  if (
-    user &&
-    (request.nextUrl.pathname === "/login" ||
-      request.nextUrl.pathname === "/signup")
-  ) {
+  if (user && (pathname === "/login" || pathname === "/signup")) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 

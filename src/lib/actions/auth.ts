@@ -2,6 +2,15 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { createServerClient } from "@supabase/ssr";
+
+function getAdminClient() {
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { cookies: { getAll: () => [], setAll: () => {} } }
+  );
+}
 
 export async function signUp(formData: FormData) {
   const supabase = await createClient();
@@ -24,8 +33,11 @@ export async function signUp(formData: FormData) {
   }
 
   if (authData.user) {
+    // Use admin client to bypass RLS for initial setup
+    const admin = getAdminClient();
+
     // Create business
-    const { data: business, error: bizError } = await supabase
+    const { data: business, error: bizError } = await admin
       .from("businesses")
       .insert({ name: businessName, email })
       .select()
@@ -36,7 +48,7 @@ export async function signUp(formData: FormData) {
     }
 
     // Create staff record for owner
-    await supabase.from("staff").insert({
+    const { error: staffError } = await admin.from("staff").insert({
       business_id: business.id,
       auth_user_id: authData.user.id,
       name: fullName,
@@ -44,8 +56,12 @@ export async function signUp(formData: FormData) {
       role: "owner",
     });
 
+    if (staffError) {
+      return { error: staffError.message };
+    }
+
     // Seed demo data
-    await supabase.rpc("seed_demo_data", { p_business_id: business.id });
+    await admin.rpc("seed_demo_data", { p_business_id: business.id });
   }
 
   redirect("/dashboard");
