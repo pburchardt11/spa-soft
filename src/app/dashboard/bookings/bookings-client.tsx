@@ -41,7 +41,7 @@ export default function BookingsClient({
   });
 
   return (
-    <div className="p-8">
+    <div className="p-4 md:p-8">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold">Bookings</h1>
@@ -104,7 +104,7 @@ export default function BookingsClient({
       </div>
 
       {view === "list" ? (
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <div className="bg-white rounded-xl border border-gray-200 overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50">
@@ -184,7 +184,7 @@ export default function BookingsClient({
         </div>
       ) : (
         /* Calendar View */
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <div className="bg-white rounded-xl border border-gray-200 overflow-x-auto">
           <div className="grid grid-cols-5 border-b border-gray-100">
             <div className="px-3 py-2 bg-gray-50" />
             {staffList.slice(0, 4).map((t) => (

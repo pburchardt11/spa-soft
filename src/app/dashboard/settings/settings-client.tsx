@@ -30,7 +30,7 @@ export default function SettingsClient({ business }: { business: Record<string, 
   }
 
   return (
-    <div className="p-8 max-w-3xl">
+    <div className="p-4 md:p-8 max-w-3xl">
       <div className="mb-8">
         <h1 className="text-2xl font-bold">Settings</h1>
         <p className="text-gray-500 text-sm mt-1">

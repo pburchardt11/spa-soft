@@ -41,7 +41,7 @@ export default function ServicesClient({ initialServices }: { initialServices: S
   }, {});
 
   return (
-    <div className="p-8">
+    <div className="p-4 md:p-8">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold">Services</h1>
@@ -62,7 +62,7 @@ export default function ServicesClient({ initialServices }: { initialServices: S
           <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
             {category}
           </h2>
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <div className="bg-white rounded-xl border border-gray-200 overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-100 bg-gray-50">
