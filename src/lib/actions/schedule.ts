@@ -130,22 +130,39 @@ export async function getStaffAbsences(month?: string) {
   return data || [];
 }
 
-export async function addAbsence(staffId: string, date: string, type: string, notes?: string) {
+export async function addAbsence(staffId: string, startDate: string, endDate: string, type: string, notes?: string) {
   const admin = await getAdminClient();
   const businessId = await getBusinessId();
   if (!businessId) return { error: "No business found" };
 
-  const { error } = await admin.from("staff_absences").insert({
+  // Generate all dates in range
+  const dates: string[] = [];
+  const start = new Date(startDate + "T12:00:00");
+  const end = new Date((endDate || startDate) + "T12:00:00");
+
+  for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+    dates.push(d.toISOString().split("T")[0]);
+  }
+
+  if (dates.length === 0) return { error: "Invalid date range" };
+  if (dates.length > 60) return { error: "Maximum 60 days per entry" };
+
+  const rows = dates.map((date) => ({
     business_id: businessId,
     staff_id: staffId,
     date,
     type,
     notes: notes || null,
-  });
+  }));
+
+  // Use upsert to skip duplicates
+  const { error } = await admin
+    .from("staff_absences")
+    .upsert(rows, { onConflict: "staff_id,date" });
 
   if (error) return { error: error.message };
   revalidatePath("/dashboard/schedule");
-  return { success: true };
+  return { success: true, count: dates.length };
 }
 
 export async function removeAbsence(id: string) {

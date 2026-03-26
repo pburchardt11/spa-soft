@@ -463,7 +463,8 @@ export default function ScheduleClient({
               setError(null);
               const result = await addAbsence(
                 formData.get("staff_id") as string,
-                formData.get("date") as string,
+                formData.get("start_date") as string,
+                formData.get("end_date") as string,
                 formData.get("type") as string,
                 formData.get("notes") as string,
               );
@@ -479,9 +480,15 @@ export default function ScheduleClient({
                   ))}
                 </select>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
-                <input name="date" type="date" required className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500" />
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">From</label>
+                  <input name="start_date" type="date" required className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">To</label>
+                  <input name="end_date" type="date" required className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500" />
+                </div>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
