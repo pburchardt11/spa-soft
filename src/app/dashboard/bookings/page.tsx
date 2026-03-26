@@ -41,6 +41,7 @@ export default async function BookingsPage() {
       staffList={staffList || []}
       services={services || []}
       clients={clients || []}
+      businessId={businessId || ""}
     />
   );
 }

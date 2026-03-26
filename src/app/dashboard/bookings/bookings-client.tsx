@@ -11,22 +11,75 @@ type BookingWithRelations = Booking & {
   service: Service | null;
 };
 
+type BookedSlot = { start_time: string; end_time: string; status: string };
+
 export default function BookingsClient({
   initialBookings,
   staffList,
   services,
   clients,
+  businessId,
 }: {
   initialBookings: BookingWithRelations[];
   staffList: Staff[];
   services: Service[];
   clients: { id: string; name: string }[];
+  businessId: string;
 }) {
   const [view, setView] = useState<"list" | "calendar">("list");
   const [search, setSearch] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [isNewClient, setIsNewClient] = useState(false);
   const [modalError, setModalError] = useState<string | null>(null);
+  const [selectedDate, setSelectedDate] = useState("");
+  const [selectedTime, setSelectedTime] = useState("");
+  const [selectedStaffId, setSelectedStaffId] = useState("");
+  const [bookedSlots, setBookedSlots] = useState<BookedSlot[]>([]);
+  const [loadingSlots, setLoadingSlots] = useState(false);
+
+  const timeSlots = [
+    "09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
+    "12:00", "12:30", "13:00", "13:30", "14:00", "14:30",
+    "15:00", "15:30", "16:00", "16:30", "17:00",
+  ];
+
+  // Generate next 14 days for date picker
+  const dates = Array.from({ length: 14 }, (_, i) => {
+    const d = new Date();
+    d.setDate(d.getDate() + i);
+    return d.toISOString().split("T")[0];
+  });
+
+  async function fetchAvailability(date: string, staffId: string) {
+    setLoadingSlots(true);
+    const params = new URLSearchParams({ date, business_id: businessId });
+    if (staffId) params.set("staff_id", staffId);
+    const res = await fetch(`/api/availability?${params}`);
+    const data = await res.json();
+    setBookedSlots(data.bookings || []);
+    setLoadingSlots(false);
+  }
+
+  function isSlotBooked(time: string) {
+    if (!selectedDate) return false;
+    const slotStart = new Date(`${selectedDate}T${time}:00`).getTime();
+    const slotEnd = slotStart + 30 * 60000; // 30 min slot
+    return bookedSlots.some((b) => {
+      const bStart = new Date(b.start_time).getTime();
+      const bEnd = new Date(b.end_time).getTime();
+      return slotStart < bEnd && slotEnd > bStart;
+    });
+  }
+
+  function resetModal() {
+    setShowModal(false);
+    setIsNewClient(false);
+    setSelectedDate("");
+    setSelectedTime("");
+    setSelectedStaffId("");
+    setBookedSlots([]);
+    setModalError(null);
+  }
 
   const filtered = initialBookings.filter(
     (b) =>
@@ -241,10 +294,10 @@ export default function BookingsClient({
       {/* New Booking Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto mx-4">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-bold">New Booking</h2>
-              <button onClick={() => setShowModal(false)}>
+              <button onClick={resetModal}>
                 <X className="h-5 w-5 text-gray-400" />
               </button>
             </div>
@@ -256,17 +309,19 @@ export default function BookingsClient({
             <form
               action={async (formData) => {
                 setModalError(null);
+                // Inject the combined start_time
+                formData.set("start_time", `${selectedDate}T${selectedTime}:00`);
                 const result = await createBooking(formData);
                 if (result?.error) {
                   setModalError(result.error);
                 } else {
-                  setShowModal(false);
-                  setIsNewClient(false);
+                  resetModal();
                   window.location.reload();
                 }
               }}
               className="space-y-4"
             >
+              {/* Client */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Client</label>
                 <select
@@ -276,7 +331,7 @@ export default function BookingsClient({
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
                 >
                   <option value="">Select client...</option>
-                  <option value="__new" className="font-semibold text-violet-600">+ New Client</option>
+                  <option value="__new">+ New Client</option>
                   {clients.map((c) => (
                     <option key={c.id} value={c.id}>{c.name}</option>
                   ))}
@@ -295,6 +350,8 @@ export default function BookingsClient({
                   </div>
                 </div>
               )}
+
+              {/* Service */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Service</label>
                 <select name="service_id" required className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500">
@@ -304,28 +361,118 @@ export default function BookingsClient({
                   ))}
                 </select>
               </div>
+
+              {/* Therapist */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Therapist</label>
-                <select name="staff_id" required className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500">
+                <select
+                  name="staff_id"
+                  required
+                  value={selectedStaffId}
+                  onChange={(e) => {
+                    setSelectedStaffId(e.target.value);
+                    if (selectedDate && e.target.value) {
+                      fetchAvailability(selectedDate, e.target.value);
+                    }
+                  }}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+                >
                   <option value="">Select therapist...</option>
                   {staffList.map((s) => (
                     <option key={s.id} value={s.id}>{s.name}</option>
                   ))}
                 </select>
               </div>
+
+              {/* Date */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Date & Time</label>
-                <input name="start_time" type="datetime-local" required className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500" />
+                <label className="block text-sm font-medium text-gray-700 mb-2">Date</label>
+                <div className="flex gap-2 flex-wrap">
+                  {dates.map((d) => {
+                    const date = new Date(d + "T12:00:00");
+                    const isSelected = selectedDate === d;
+                    return (
+                      <button
+                        key={d}
+                        type="button"
+                        onClick={() => {
+                          setSelectedDate(d);
+                          setSelectedTime("");
+                          if (selectedStaffId) {
+                            fetchAvailability(d, selectedStaffId);
+                          } else {
+                            fetchAvailability(d, "");
+                          }
+                        }}
+                        className={`px-2.5 py-1.5 rounded-lg text-center transition ${
+                          isSelected
+                            ? "bg-violet-600 text-white"
+                            : "bg-gray-100 hover:bg-gray-200"
+                        }`}
+                      >
+                        <p className="text-xs font-medium">{date.toLocaleDateString("en-US", { weekday: "short" })}</p>
+                        <p className="text-sm font-bold">{date.getDate()}</p>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
+
+              {/* Time Slots */}
+              {selectedDate && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Time {loadingSlots && <span className="text-gray-400 font-normal">(checking...)</span>}
+                  </label>
+                  <div className="grid grid-cols-4 gap-2">
+                    {timeSlots.map((t) => {
+                      const booked = isSlotBooked(t);
+                      const isSelected = selectedTime === t;
+                      return (
+                        <button
+                          key={t}
+                          type="button"
+                          disabled={booked}
+                          onClick={() => !booked && setSelectedTime(t)}
+                          className={`py-2 rounded-lg text-sm font-medium transition ${
+                            booked
+                              ? "bg-red-100 text-red-400 line-through cursor-not-allowed"
+                              : isSelected
+                              ? "bg-violet-600 text-white"
+                              : "bg-gray-100 hover:bg-gray-200"
+                          }`}
+                        >
+                          {t}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {!loadingSlots && bookedSlots.length > 0 && (
+                    <p className="text-xs text-gray-400 mt-2">
+                      <span className="inline-block w-3 h-3 bg-red-100 rounded mr-1 align-middle" /> Booked slots
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* Hidden field for form submission */}
+              <input type="hidden" name="start_time" value={selectedDate && selectedTime ? `${selectedDate}T${selectedTime}:00` : ""} />
+
+              {/* Notes */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
                 <textarea name="notes" rows={2} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500" />
               </div>
+
               <div className="flex gap-3 pt-2">
-                <button type="button" onClick={() => { setShowModal(false); setIsNewClient(false); }} className="flex-1 py-2.5 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50">
+                <button type="button" onClick={resetModal} className="flex-1 py-2.5 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50">
                   Cancel
                 </button>
-                <button type="submit" className="flex-1 py-2.5 bg-violet-600 text-white rounded-lg text-sm font-medium hover:bg-violet-700">
+                <button
+                  type="submit"
+                  disabled={!selectedDate || !selectedTime}
+                  className="flex-1 py-2.5 bg-violet-600 text-white rounded-lg text-sm font-medium hover:bg-violet-700 disabled:opacity-50"
+                >
                   Create Booking
                 </button>
               </div>
