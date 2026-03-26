@@ -35,7 +35,27 @@ export default function ScheduleClient({
   initialSchedules: Schedule[];
   initialAbsences: Absence[];
 }) {
-  const [tab, setTab] = useState<"hours" | "shifts" | "schedule" | "absences" | "report">("hours");
+  const [tab, setTabState] = useState<"hours" | "shifts" | "schedule" | "absences" | "report">(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const t = params.get("tab");
+      if (t === "schedule" || t === "absences" || t === "report" || t === "hours") return t;
+    }
+    return "hours";
+  });
+
+  function setTab(t: typeof tab) {
+    setTabState(t);
+    const url = new URL(window.location.href);
+    url.searchParams.set("tab", t);
+    window.history.replaceState({}, "", url.toString());
+  }
+
+  function reloadWithTab() {
+    const url = new URL(window.location.href);
+    url.searchParams.set("tab", tab);
+    window.location.href = url.toString();
+  }
   const [hours, setHours] = useState<Hour[]>(() => {
     if (initialHours.length === 7) return initialHours;
     return Array.from({ length: 7 }, (_, i) => {
@@ -145,7 +165,7 @@ export default function ScheduleClient({
                     <p className="font-medium text-sm">{s.name}</p>
                     <p className="text-xs text-gray-500">{s.start_time.slice(0, 5)} — {s.end_time.slice(0, 5)}</p>
                   </div>
-                  <button onClick={async () => { await deleteShift(s.id); window.location.reload(); }} className="text-gray-400 hover:text-red-500">
+                  <button onClick={async () => { await deleteShift(s.id); reloadWithTab(); }} className="text-gray-400 hover:text-red-500">
                     <Trash2 className="h-4 w-4" />
                   </button>
                 </div>
@@ -192,7 +212,7 @@ export default function ScheduleClient({
                             value={current?.shift_id || ""}
                             onChange={async (e) => {
                               await setStaffShift(staff.id, dow, e.target.value || null);
-                              window.location.reload();
+                              reloadWithTab();
                             }}
                             className="w-full px-2 py-1.5 border border-gray-200 rounded text-xs focus:outline-none focus:ring-1 focus:ring-violet-500"
                           >
@@ -257,7 +277,7 @@ export default function ScheduleClient({
                     </td>
                     <td className="px-5 py-3 text-gray-500 text-xs">{a.notes || "-"}</td>
                     <td className="px-3 py-3">
-                      <button onClick={async () => { await removeAbsence(a.id); window.location.reload(); }} className="text-gray-400 hover:text-red-500">
+                      <button onClick={async () => { await removeAbsence(a.id); reloadWithTab(); }} className="text-gray-400 hover:text-red-500">
                         <Trash2 className="h-4 w-4" />
                       </button>
                     </td>
@@ -405,7 +425,7 @@ export default function ScheduleClient({
               setError(null);
               const result = await createShift(formData);
               if (result?.error) { setError(result.error); }
-              else { setShowShiftModal(false); window.location.reload(); }
+              else { setShowShiftModal(false); reloadWithTab(); }
             }} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Shift Name</label>
@@ -448,7 +468,7 @@ export default function ScheduleClient({
                 formData.get("notes") as string,
               );
               if (result?.error) { setError(result.error); }
-              else { setShowAbsenceModal(false); window.location.reload(); }
+              else { setShowAbsenceModal(false); reloadWithTab(); }
             }} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Staff Member</label>
