@@ -36,11 +36,17 @@ export default function BookingsClient({
   const [selectedStaffId, setSelectedStaffId] = useState("");
   const [bookedSlots, setBookedSlots] = useState<BookedSlot[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
+  const [staffAbsent, setStaffAbsent] = useState(false);
+  const [staffOffDay, setStaffOffDay] = useState(false);
+  const [businessClosed, setBusinessClosed] = useState(false);
+  const [shiftStart, setShiftStart] = useState<string | null>(null);
+  const [shiftEnd, setShiftEnd] = useState<string | null>(null);
 
-  const timeSlots = [
+  const allTimeSlots = [
     "09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
     "12:00", "12:30", "13:00", "13:30", "14:00", "14:30",
-    "15:00", "15:30", "16:00", "16:30", "17:00",
+    "15:00", "15:30", "16:00", "16:30", "17:00", "17:30",
+    "18:00", "18:30", "19:00", "19:30", "20:00",
   ];
 
   // Generate next 14 days for date picker
@@ -52,23 +58,45 @@ export default function BookingsClient({
 
   async function fetchAvailability(date: string, staffId: string) {
     setLoadingSlots(true);
+    setStaffAbsent(false);
+    setStaffOffDay(false);
+    setBusinessClosed(false);
+    setShiftStart(null);
+    setShiftEnd(null);
+
     const params = new URLSearchParams({ date, business_id: businessId });
     if (staffId) params.set("staff_id", staffId);
     const res = await fetch(`/api/availability?${params}`);
     const data = await res.json();
     setBookedSlots(data.bookings || []);
+    setStaffAbsent(data.staffAbsent || false);
+    setStaffOffDay(data.staffOffDay || false);
+    setBusinessClosed(data.businessClosed || false);
+    setShiftStart(data.shiftStart || null);
+    setShiftEnd(data.shiftEnd || null);
     setLoadingSlots(false);
   }
 
-  function isSlotBooked(time: string) {
-    if (!selectedDate) return false;
+  function getSlotStatus(time: string): "available" | "booked" | "outside_shift" | "unavailable" {
+    if (!selectedDate) return "available";
+    if (staffAbsent || staffOffDay || businessClosed) return "unavailable";
+
+    // Check if outside staff shift hours
+    if (shiftStart && shiftEnd) {
+      if (time < shiftStart || time >= shiftEnd) return "outside_shift";
+    }
+
+    // Check if booked
     const slotStart = new Date(`${selectedDate}T${time}:00`).getTime();
-    const slotEnd = slotStart + 30 * 60000; // 30 min slot
-    return bookedSlots.some((b) => {
+    const slotEnd = slotStart + 30 * 60000;
+    const isBooked = bookedSlots.some((b) => {
       const bStart = new Date(b.start_time).getTime();
       const bEnd = new Date(b.end_time).getTime();
       return slotStart < bEnd && slotEnd > bStart;
     });
+    if (isBooked) return "booked";
+
+    return "available";
   }
 
   function resetModal() {
@@ -78,6 +106,11 @@ export default function BookingsClient({
     setSelectedTime("");
     setSelectedStaffId("");
     setBookedSlots([]);
+    setStaffAbsent(false);
+    setStaffOffDay(false);
+    setBusinessClosed(false);
+    setShiftStart(null);
+    setShiftEnd(null);
     setModalError(null);
   }
 
@@ -424,33 +457,57 @@ export default function BookingsClient({
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Time {loadingSlots && <span className="text-gray-400 font-normal">(checking...)</span>}
                   </label>
-                  <div className="grid grid-cols-4 gap-2">
-                    {timeSlots.map((t) => {
-                      const booked = isSlotBooked(t);
-                      const isSelected = selectedTime === t;
-                      return (
-                        <button
-                          key={t}
-                          type="button"
-                          disabled={booked}
-                          onClick={() => !booked && setSelectedTime(t)}
-                          className={`py-2 rounded-lg text-sm font-medium transition ${
-                            booked
-                              ? "bg-red-100 text-red-400 line-through cursor-not-allowed"
-                              : isSelected
-                              ? "bg-violet-600 text-white"
-                              : "bg-gray-100 hover:bg-gray-200"
-                          }`}
-                        >
-                          {t}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  {!loadingSlots && bookedSlots.length > 0 && (
-                    <p className="text-xs text-gray-400 mt-2">
-                      <span className="inline-block w-3 h-3 bg-red-100 rounded mr-1 align-middle" /> Booked slots
-                    </p>
+
+                  {/* Show warning if day is unavailable */}
+                  {!loadingSlots && businessClosed && (
+                    <div className="p-3 bg-gray-100 rounded-lg text-sm text-gray-500 mb-2">
+                      Spa is closed on this day.
+                    </div>
+                  )}
+                  {!loadingSlots && staffAbsent && !businessClosed && (
+                    <div className="p-3 bg-red-50 rounded-lg text-sm text-red-600 mb-2">
+                      This therapist is on leave/absent on this day.
+                    </div>
+                  )}
+                  {!loadingSlots && staffOffDay && !businessClosed && !staffAbsent && (
+                    <div className="p-3 bg-amber-50 rounded-lg text-sm text-amber-600 mb-2">
+                      This therapist is not scheduled to work on this day.
+                    </div>
+                  )}
+
+                  {!businessClosed && !staffAbsent && !staffOffDay && (
+                    <>
+                      <div className="grid grid-cols-4 gap-2">
+                        {allTimeSlots.map((t) => {
+                          const status = getSlotStatus(t);
+                          const isSelected = selectedTime === t;
+                          const disabled = status !== "available";
+                          return (
+                            <button
+                              key={t}
+                              type="button"
+                              disabled={disabled}
+                              onClick={() => !disabled && setSelectedTime(t)}
+                              className={`py-2 rounded-lg text-sm font-medium transition ${
+                                status === "booked"
+                                  ? "bg-red-100 text-red-400 line-through cursor-not-allowed"
+                                  : status === "outside_shift"
+                                  ? "bg-gray-50 text-gray-300 cursor-not-allowed"
+                                  : isSelected
+                                  ? "bg-violet-600 text-white"
+                                  : "bg-gray-100 hover:bg-gray-200"
+                              }`}
+                            >
+                              {t}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <div className="flex gap-4 mt-2 text-xs text-gray-400">
+                        <span><span className="inline-block w-3 h-3 bg-red-100 rounded mr-1 align-middle" /> Booked</span>
+                        <span><span className="inline-block w-3 h-3 bg-gray-50 border border-gray-200 rounded mr-1 align-middle" /> Outside shift</span>
+                      </div>
+                    </>
                   )}
                 </div>
               )}

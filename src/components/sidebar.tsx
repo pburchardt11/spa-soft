@@ -17,6 +17,7 @@ import {
   ExternalLink,
   Menu,
   X,
+  CalendarClock,
 } from "lucide-react";
 import { signOut } from "@/lib/actions/auth";
 
@@ -26,6 +27,7 @@ const nav = [
   { href: "/dashboard/clients", label: "Clients", icon: Users },
   { href: "/dashboard/staff", label: "Staff", icon: UserCog },
   { href: "/dashboard/services", label: "Services", icon: Scissors },
+  { href: "/dashboard/schedule", label: "Schedule", icon: CalendarClock },
   { href: "/dashboard/payments", label: "Payments", icon: CreditCard },
   { href: "/dashboard/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/dashboard/settings", label: "Settings", icon: Settings },
