@@ -1,5 +1,6 @@
 import Sidebar from "@/components/sidebar";
 import { createClient } from "@/lib/supabase/server";
+import { getAdminClient } from "@/lib/actions/helpers";
 
 export default async function DashboardLayout({
   children,
@@ -11,7 +12,9 @@ export default async function DashboardLayout({
 
   let businessName = "My Spa";
   if (user) {
-    const { data: staffRow } = await supabase
+    // Use admin client to avoid RLS recursion on staff table
+    const admin = await getAdminClient();
+    const { data: staffRow } = await admin
       .from("staff")
       .select("business_id, businesses(name)")
       .eq("auth_user_id", user.id)

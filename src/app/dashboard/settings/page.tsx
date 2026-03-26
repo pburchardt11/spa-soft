@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { getAdminClient } from "@/lib/actions/helpers";
 import SettingsClient from "./settings-client";
 
 export default async function SettingsPage() {
@@ -7,7 +8,8 @@ export default async function SettingsPage() {
 
   let business = null;
   if (user) {
-    const { data: staffRow } = await supabase
+    const admin = await getAdminClient();
+    const { data: staffRow } = await admin
       .from("staff")
       .select("business_id")
       .eq("auth_user_id", user.id)
