@@ -25,6 +25,8 @@ export default function BookingsClient({
   const [view, setView] = useState<"list" | "calendar">("list");
   const [search, setSearch] = useState("");
   const [showModal, setShowModal] = useState(false);
+  const [isNewClient, setIsNewClient] = useState(false);
+  const [modalError, setModalError] = useState<string | null>(null);
 
   const filtered = initialBookings.filter(
     (b) =>
@@ -239,29 +241,60 @@ export default function BookingsClient({
       {/* New Booking Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl w-full max-w-md p-6">
+          <div className="bg-white rounded-xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-bold">New Booking</h2>
               <button onClick={() => setShowModal(false)}>
                 <X className="h-5 w-5 text-gray-400" />
               </button>
             </div>
+            {modalError && (
+              <div className="mb-4 p-3 text-sm text-red-700 bg-red-50 rounded-lg">
+                {modalError}
+              </div>
+            )}
             <form
               action={async (formData) => {
-                await createBooking(formData);
-                setShowModal(false);
+                setModalError(null);
+                const result = await createBooking(formData);
+                if (result?.error) {
+                  setModalError(result.error);
+                } else {
+                  setShowModal(false);
+                  setIsNewClient(false);
+                  window.location.reload();
+                }
               }}
               className="space-y-4"
             >
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Client</label>
-                <select name="client_id" required className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500">
+                <select
+                  name="client_id"
+                  required
+                  onChange={(e) => setIsNewClient(e.target.value === "__new")}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+                >
                   <option value="">Select client...</option>
+                  <option value="__new" className="font-semibold text-violet-600">+ New Client</option>
                   {clients.map((c) => (
                     <option key={c.id} value={c.id}>{c.name}</option>
                   ))}
                 </select>
               </div>
+              {isNewClient && (
+                <div className="bg-violet-50 border border-violet-200 rounded-lg p-3 space-y-3">
+                  <p className="text-xs font-medium text-violet-700">New client details</p>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Name *</label>
+                    <input name="new_client_name" type="text" required placeholder="Client name" className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Phone</label>
+                    <input name="new_client_phone" type="tel" placeholder="Phone number" className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500" />
+                  </div>
+                </div>
+              )}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Service</label>
                 <select name="service_id" required className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500">
@@ -289,7 +322,7 @@ export default function BookingsClient({
                 <textarea name="notes" rows={2} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500" />
               </div>
               <div className="flex gap-3 pt-2">
-                <button type="button" onClick={() => setShowModal(false)} className="flex-1 py-2.5 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50">
+                <button type="button" onClick={() => { setShowModal(false); setIsNewClient(false); }} className="flex-1 py-2.5 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50">
                   Cancel
                 </button>
                 <button type="submit" className="flex-1 py-2.5 bg-violet-600 text-white rounded-lg text-sm font-medium hover:bg-violet-700">

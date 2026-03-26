@@ -29,6 +29,30 @@ export async function createBooking(formData: FormData) {
   const businessId = await getBusinessId();
   if (!businessId) return { error: "No business found" };
 
+  let clientId = formData.get("client_id") as string;
+
+  // Handle new client creation
+  if (clientId === "__new") {
+    const newName = formData.get("new_client_name") as string;
+    const newPhone = formData.get("new_client_phone") as string;
+
+    if (!newName) return { error: "Client name is required" };
+
+    const { data: newClient, error: clientError } = await supabase
+      .from("clients")
+      .insert({
+        business_id: businessId,
+        name: newName,
+        phone: newPhone || null,
+        tags: ["New"],
+      })
+      .select("id")
+      .single();
+
+    if (clientError) return { error: clientError.message };
+    clientId = newClient.id;
+  }
+
   const serviceId = formData.get("service_id") as string;
   const { data: service } = await supabase
     .from("services")
@@ -43,7 +67,7 @@ export async function createBooking(formData: FormData) {
 
   const { error } = await supabase.from("bookings").insert({
     business_id: businessId,
-    client_id: formData.get("client_id") as string,
+    client_id: clientId,
     staff_id: formData.get("staff_id") as string,
     service_id: serviceId,
     start_time: startTime,
@@ -55,6 +79,7 @@ export async function createBooking(formData: FormData) {
   if (error) return { error: error.message };
 
   revalidatePath("/dashboard/bookings");
+  revalidatePath("/dashboard/clients");
   revalidatePath("/dashboard");
   return { success: true };
 }
