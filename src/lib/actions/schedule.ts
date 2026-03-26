@@ -1,28 +1,29 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
 import { getBusinessId, getAdminClient } from "./helpers";
 
 // ─── Business Hours ───
 
 export async function getBusinessHours() {
-  const supabase = await createClient();
-  const { data } = await supabase
+  const admin = await getAdminClient();
+  const businessId = await getBusinessId();
+  if (!businessId) return [];
+  const { data } = await admin
     .from("business_hours")
     .select("*")
+    .eq("business_id", businessId)
     .order("day_of_week");
   return data || [];
 }
 
 export async function saveBusinessHours(hours: { day_of_week: number; is_open: boolean; open_time: string; close_time: string }[]) {
-  const supabase = await createClient();
+  const admin = await getAdminClient();
   const businessId = await getBusinessId();
   if (!businessId) return { error: "No business found" };
 
-  // Delete existing and re-insert
-  await supabase.from("business_hours").delete().eq("business_id", businessId);
-  const { error } = await supabase.from("business_hours").insert(
+  await admin.from("business_hours").delete().eq("business_id", businessId);
+  const { error } = await admin.from("business_hours").insert(
     hours.map((h) => ({ business_id: businessId, ...h }))
   );
 
@@ -34,17 +35,19 @@ export async function saveBusinessHours(hours: { day_of_week: number; is_open: b
 // ─── Shifts ───
 
 export async function getShifts() {
-  const supabase = await createClient();
-  const { data } = await supabase.from("shifts").select("*").order("start_time");
+  const admin = await getAdminClient();
+  const businessId = await getBusinessId();
+  if (!businessId) return [];
+  const { data } = await admin.from("shifts").select("*").eq("business_id", businessId).order("start_time");
   return data || [];
 }
 
 export async function createShift(formData: FormData) {
-  const supabase = await createClient();
+  const admin = await getAdminClient();
   const businessId = await getBusinessId();
   if (!businessId) return { error: "No business found" };
 
-  const { error } = await supabase.from("shifts").insert({
+  const { error } = await admin.from("shifts").insert({
     business_id: businessId,
     name: formData.get("name") as string,
     start_time: formData.get("start_time") as string,
@@ -58,8 +61,8 @@ export async function createShift(formData: FormData) {
 }
 
 export async function deleteShift(id: string) {
-  const supabase = await createClient();
-  const { error } = await supabase.from("shifts").delete().eq("id", id);
+  const admin = await getAdminClient();
+  const { error } = await admin.from("shifts").delete().eq("id", id);
   if (error) return { error: error.message };
   revalidatePath("/dashboard/schedule");
   return { success: true };
@@ -80,20 +83,18 @@ export async function getStaffSchedules() {
 }
 
 export async function setStaffShift(staffId: string, dayOfWeek: number, shiftId: string | null) {
-  const supabase = await createClient();
+  const admin = await getAdminClient();
   const businessId = await getBusinessId();
   if (!businessId) return { error: "No business found" };
 
-  // Remove existing assignment for this staff+day
-  await supabase
+  await admin
     .from("staff_schedules")
     .delete()
     .eq("staff_id", staffId)
     .eq("day_of_week", dayOfWeek);
 
-  // Insert new if shiftId provided
   if (shiftId) {
-    const { error } = await supabase.from("staff_schedules").insert({
+    const { error } = await admin.from("staff_schedules").insert({
       business_id: businessId,
       staff_id: staffId,
       day_of_week: dayOfWeek,
@@ -130,11 +131,11 @@ export async function getStaffAbsences(month?: string) {
 }
 
 export async function addAbsence(staffId: string, date: string, type: string, notes?: string) {
-  const supabase = await createClient();
+  const admin = await getAdminClient();
   const businessId = await getBusinessId();
   if (!businessId) return { error: "No business found" };
 
-  const { error } = await supabase.from("staff_absences").insert({
+  const { error } = await admin.from("staff_absences").insert({
     business_id: businessId,
     staff_id: staffId,
     date,
@@ -148,8 +149,8 @@ export async function addAbsence(staffId: string, date: string, type: string, no
 }
 
 export async function removeAbsence(id: string) {
-  const supabase = await createClient();
-  const { error } = await supabase.from("staff_absences").delete().eq("id", id);
+  const admin = await getAdminClient();
+  const { error } = await admin.from("staff_absences").delete().eq("id", id);
   if (error) return { error: error.message };
   revalidatePath("/dashboard/schedule");
   return { success: true };
@@ -162,7 +163,6 @@ export async function getMonthlyReport(month: string) {
   const businessId = await getBusinessId();
   if (!businessId) return [];
 
-  // Get all active staff
   const { data: staffList } = await admin
     .from("staff")
     .select("id, name")
@@ -171,7 +171,6 @@ export async function getMonthlyReport(month: string) {
     .in("role", ["therapist", "manager", "owner"])
     .order("name");
 
-  // Get absences for the month
   const { data: absences } = await admin
     .from("staff_absences")
     .select("staff_id, type")
@@ -179,13 +178,11 @@ export async function getMonthlyReport(month: string) {
     .gte("date", `${month}-01`)
     .lte("date", `${month}-31`);
 
-  // Get staff schedules
   const { data: schedules } = await admin
     .from("staff_schedules")
     .select("staff_id, day_of_week")
     .eq("business_id", businessId);
 
-  // Calculate working days in month
   const [year, mon] = month.split("-").map(Number);
   const daysInMonth = new Date(year, mon, 0).getDate();
 
@@ -196,7 +193,6 @@ export async function getMonthlyReport(month: string) {
         .map((s) => s.day_of_week)
     );
 
-    // Count scheduled work days in this month
     let scheduledDays = 0;
     for (let d = 1; d <= daysInMonth; d++) {
       const dow = new Date(year, mon - 1, d).getDay();
