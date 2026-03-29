@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Plus, Search, Filter, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { createBooking, updateBookingStatus } from "@/lib/actions/bookings";
 import type { Booking, Staff, Service, Client } from "@/lib/types";
@@ -19,13 +20,16 @@ export default function BookingsClient({
   services,
   clients,
   businessId,
+  viewDate,
 }: {
   initialBookings: BookingWithRelations[];
   staffList: Staff[];
   services: Service[];
   clients: { id: string; name: string }[];
   businessId: string;
+  viewDate: string;
 }) {
+  const router = useRouter();
   const [view, setView] = useState<"list" | "calendar">("list");
   const [search, setSearch] = useState("");
   const [showModal, setShowModal] = useState(false);
@@ -120,13 +124,21 @@ export default function BookingsClient({
       (b.service?.name || "").toLowerCase().includes(search.toLowerCase())
   );
 
-  const today = new Date();
-  const dateStr = today.toLocaleDateString("en-US", {
+  const viewDateObj = new Date(viewDate + "T12:00:00");
+  const dateStr = viewDateObj.toLocaleDateString("en-US", {
     weekday: "long",
     year: "numeric",
     month: "long",
     day: "numeric",
   });
+  const todayStr = new Date().toISOString().split("T")[0];
+
+  function navigateDate(offset: number) {
+    const d = new Date(viewDate + "T12:00:00");
+    d.setDate(d.getDate() + offset);
+    const newDate = d.toISOString().split("T")[0];
+    router.push(`/dashboard/bookings?date=${newDate}`);
+  }
 
   return (
     <div className="p-4 md:p-8">
@@ -182,13 +194,21 @@ export default function BookingsClient({
 
       {/* Date nav */}
       <div className="flex items-center gap-4 mb-6">
-        <button className="p-1.5 rounded-lg hover:bg-gray-100">
+        <button onClick={() => navigateDate(-1)} className="p-1.5 rounded-lg hover:bg-gray-100">
           <ChevronLeft className="h-4 w-4" />
         </button>
         <h2 className="font-semibold">{dateStr}</h2>
-        <button className="p-1.5 rounded-lg hover:bg-gray-100">
+        <button onClick={() => navigateDate(1)} className="p-1.5 rounded-lg hover:bg-gray-100">
           <ChevronRight className="h-4 w-4" />
         </button>
+        {viewDate !== todayStr && (
+          <button
+            onClick={() => router.push("/dashboard/bookings")}
+            className="text-xs text-violet-600 font-medium ml-1"
+          >
+            Today
+          </button>
+        )}
       </div>
 
       {view === "list" ? (

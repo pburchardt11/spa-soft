@@ -1,31 +1,10 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
-import { getBusinessId } from "./helpers";
-
-export async function getBookings(date?: string) {
-  const supabase = await createClient();
-
-  let query = supabase
-    .from("bookings")
-    .select("*, client:clients(*), staff:staff(*), service:services(*)")
-    .order("start_time", { ascending: true });
-
-  if (date) {
-    query = query
-      .gte("start_time", `${date}T00:00:00`)
-      .lt("start_time", `${date}T23:59:59`);
-  }
-
-  const { data, error } = await query;
-  if (error) throw error;
-  return data;
-}
+import { getBusinessId, getAdminClient } from "./helpers";
 
 export async function createBooking(formData: FormData) {
-  const supabase = await createClient();
-
+  const admin = await getAdminClient();
   const businessId = await getBusinessId();
   if (!businessId) return { error: "No business found" };
 
@@ -38,7 +17,7 @@ export async function createBooking(formData: FormData) {
 
     if (!newName) return { error: "Client name is required" };
 
-    const { data: newClient, error: clientError } = await supabase
+    const { data: newClient, error: clientError } = await admin
       .from("clients")
       .insert({
         business_id: businessId,
@@ -54,18 +33,22 @@ export async function createBooking(formData: FormData) {
   }
 
   const serviceId = formData.get("service_id") as string;
-  const { data: service } = await supabase
+  const { data: service } = await admin
     .from("services")
     .select("duration")
     .eq("id", serviceId)
     .single();
 
   const startTime = formData.get("start_time") as string;
+  if (!startTime || startTime.includes("undefined")) {
+    return { error: "Please select a date and time" };
+  }
+
   const endTime = new Date(
     new Date(startTime).getTime() + (service?.duration || 60) * 60000
   ).toISOString();
 
-  const { error } = await supabase.from("bookings").insert({
+  const { error } = await admin.from("bookings").insert({
     business_id: businessId,
     client_id: clientId,
     staff_id: formData.get("staff_id") as string,
@@ -85,9 +68,9 @@ export async function createBooking(formData: FormData) {
 }
 
 export async function updateBookingStatus(id: string, status: string) {
-  const supabase = await createClient();
+  const admin = await getAdminClient();
 
-  const { error } = await supabase
+  const { error } = await admin
     .from("bookings")
     .update({ status })
     .eq("id", id);
