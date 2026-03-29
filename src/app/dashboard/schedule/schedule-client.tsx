@@ -264,7 +264,7 @@ export default function ScheduleClient({
               <tbody className="divide-y">
                 {initialAbsences.map((a) => (
                   <tr key={a.id} className="hover:bg-gray-50">
-                    <td className="px-5 py-3 font-medium">{(a.staff as unknown as { name: string })?.name || "-"}</td>
+                    <td className="px-5 py-3 font-medium">{staffList.find((s) => s.id === a.staff_id)?.name || "-"}</td>
                     <td className="px-5 py-3 text-gray-600">
                       {new Date(a.date + "T12:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
                     </td>
