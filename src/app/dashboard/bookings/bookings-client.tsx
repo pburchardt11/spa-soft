@@ -21,6 +21,8 @@ export default function BookingsClient({
   clients,
   businessId,
   viewDate,
+  staffSchedules,
+  absences,
 }: {
   initialBookings: BookingWithRelations[];
   staffList: Staff[];
@@ -28,6 +30,8 @@ export default function BookingsClient({
   clients: { id: string; name: string }[];
   businessId: string;
   viewDate: string;
+  staffSchedules: { staff_id: string; start_time: string | null; end_time: string | null }[];
+  absences: { staff_id: string; type: string }[];
 }) {
   const router = useRouter();
   const [view, setView] = useState<"list" | "calendar">("list");
@@ -292,56 +296,116 @@ export default function BookingsClient({
         </div>
       ) : (
         /* Calendar View */
-        <div className="bg-white rounded-xl border border-gray-200 overflow-x-auto">
-          <div className="grid grid-cols-5 border-b border-gray-100">
-            <div className="px-3 py-2 bg-gray-50" />
-            {staffList.slice(0, 4).map((t) => (
-              <div
-                key={t.id}
-                className="px-3 py-2 text-sm font-medium text-center bg-gray-50 border-l border-gray-100"
-              >
-                {t.name}
-              </div>
-            ))}
-          </div>
-          <div className="divide-y divide-gray-50">
-            {Array.from({ length: 17 }, (_, i) => {
-              const hour = 9 + Math.floor(i / 2);
-              const min = i % 2 === 0 ? "00" : "30";
-              const label =
-                hour > 12
-                  ? `${hour - 12}:${min} PM`
-                  : hour === 12
-                  ? `12:${min} PM`
-                  : `${hour}:${min} AM`;
+        (() => {
+          const calStaff = staffList.filter((s) => ["therapist", "manager", "owner"].includes(s.role));
+          const colCount = calStaff.length + 1;
 
-              return (
-                <div key={i} className="grid grid-cols-5 min-h-[40px]">
-                  <div className="px-3 py-1.5 text-xs text-gray-400 font-mono border-r border-gray-100">
-                    {label}
-                  </div>
-                  {staffList.slice(0, 4).map((t) => {
-                    const booking = initialBookings.find((b) => {
-                      const bHour = new Date(b.start_time).getHours();
-                      const bMin = new Date(b.start_time).getMinutes();
-                      return b.staff?.id === t.id && bHour === hour && Math.abs(bMin - Number(min)) < 15;
-                    });
-                    return (
-                      <div key={t.id} className="px-1 py-0.5 border-l border-gray-50">
-                        {booking && (
-                          <div className="bg-violet-100 text-violet-800 rounded px-2 py-1 text-xs">
-                            <p className="font-medium truncate">{booking.client?.name}</p>
-                            <p className="text-violet-600 truncate">{booking.service?.name}</p>
-                          </div>
-                        )}
+          // Build time slots from 8:00 to 20:30
+          const calSlots: { hour: number; min: string; time: string; label: string }[] = [];
+          for (let h = 8; h <= 20; h++) {
+            for (const m of ["00", "30"]) {
+              if (h === 20 && m === "30") break;
+              const time = `${String(h).padStart(2, "0")}:${m}`;
+              const label = h > 12 ? `${h - 12}:${m} PM` : h === 12 ? `12:${m} PM` : `${h}:${m} AM`;
+              calSlots.push({ hour: h, min: m, time, label });
+            }
+          }
+
+          return (
+            <div className="bg-white rounded-xl border border-gray-200 overflow-x-auto">
+              {/* Header */}
+              <div className="flex border-b border-gray-100" style={{ minWidth: `${colCount * 140}px` }}>
+                <div className="w-20 shrink-0 px-2 py-2 bg-gray-50 text-xs font-medium text-gray-500">Time</div>
+                {calStaff.map((s) => {
+                  const isAbsent = absences.some((a) => a.staff_id === s.id);
+                  return (
+                    <div key={s.id} className="flex-1 min-w-[120px] px-2 py-2 bg-gray-50 border-l border-gray-100 text-center">
+                      <div className="flex items-center justify-center gap-1.5">
+                        <div className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: s.color }} />
+                        <span className="text-sm font-medium truncate">{s.name}</span>
                       </div>
-                    );
-                  })}
-                </div>
-              );
-            })}
-          </div>
-        </div>
+                      {isAbsent && (
+                        <span className="text-[10px] text-red-500 font-medium">
+                          ({absences.find((a) => a.staff_id === s.id)?.type})
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Time rows */}
+              <div className="divide-y divide-gray-50" style={{ minWidth: `${colCount * 140}px` }}>
+                {calSlots.map((slot) => (
+                  <div key={slot.time} className="flex min-h-[38px]">
+                    <div className="w-20 shrink-0 px-2 py-1 text-[11px] text-gray-400 font-mono border-r border-gray-100 flex items-start pt-1.5">
+                      {slot.label}
+                    </div>
+                    {calStaff.map((s) => {
+                      const isAbsent = absences.some((a) => a.staff_id === s.id);
+                      const schedule = staffSchedules.find((sc) => sc.staff_id === s.id);
+                      const isOutsideShift = schedule?.start_time && schedule?.end_time
+                        ? slot.time < schedule.start_time || slot.time >= schedule.end_time
+                        : false;
+                      const hasNoSchedule = !schedule;
+
+                      // Find booking at this slot
+                      const booking = initialBookings.find((b) => {
+                        if (b.staff?.id !== s.id) return false;
+                        const bTime = b.start_time.slice(11, 16); // HH:MM from ISO
+                        return bTime === slot.time;
+                      });
+
+                      // Check if this slot is covered by a multi-slot booking
+                      const coveredBooking = !booking && initialBookings.find((b) => {
+                        if (b.staff?.id !== s.id) return false;
+                        const bStart = b.start_time.slice(11, 16);
+                        const bEnd = b.end_time.slice(11, 16);
+                        return slot.time > bStart && slot.time < bEnd;
+                      });
+
+                      let bgClass = "bg-white";
+                      if (isAbsent) {
+                        bgClass = "bg-red-50";
+                      } else if (isOutsideShift || hasNoSchedule) {
+                        bgClass = "bg-gray-50";
+                      }
+
+                      return (
+                        <div key={s.id} className={`flex-1 min-w-[120px] px-1 py-0.5 border-l border-gray-50 ${bgClass}`}>
+                          {booking && (
+                            <div
+                              className="rounded px-1.5 py-1 text-[11px] text-white"
+                              style={{ backgroundColor: s.color || "#7c3aed" }}
+                            >
+                              <p className="font-medium truncate">{booking.client?.name || "Walk-in"}</p>
+                              <p className="truncate opacity-80">{booking.service?.name}</p>
+                            </div>
+                          )}
+                          {coveredBooking && (
+                            <div
+                              className="rounded px-1.5 py-0.5 text-[10px] text-white/70"
+                              style={{ backgroundColor: s.color || "#7c3aed", opacity: 0.6 }}
+                            >
+                              <p className="truncate">(continued)</p>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ))}
+              </div>
+
+              {/* Legend */}
+              <div className="px-3 py-2 border-t border-gray-100 flex gap-4 text-[11px] text-gray-400">
+                <span><span className="inline-block w-3 h-3 bg-gray-50 border border-gray-200 rounded mr-1 align-middle" /> Off / No schedule</span>
+                <span><span className="inline-block w-3 h-3 bg-red-50 border border-red-200 rounded mr-1 align-middle" /> Absent</span>
+                <span><span className="inline-block w-3 h-3 bg-violet-500 rounded mr-1 align-middle" /> Booked</span>
+              </div>
+            </div>
+          );
+        })()
       )}
 
       {/* New Booking Modal */}
