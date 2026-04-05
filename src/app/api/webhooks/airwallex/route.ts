@@ -73,7 +73,7 @@ export async function POST(request: Request) {
     }
   }
 
-  if (event.name === "payment_intent.payment_failed") {
+  if (event.name === "payment_intent.cancelled" || event.name === "payment_intent.payment_failed") {
     const intentId = event.data?.object?.id;
 
     if (intentId) {
