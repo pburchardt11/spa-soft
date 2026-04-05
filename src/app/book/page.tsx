@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Sparkles, Calendar, Clock, CheckCircle } from "lucide-react";
+import { Sparkles, Calendar, Clock, CheckCircle, CreditCard } from "lucide-react";
 
 type Service = { id: string; name: string; description: string | null; duration: number; price: number; category: string | null };
 type Staff = { id: string; name: string; color: string };
-type Business = { name: string; timezone: string; currency: string };
+type Business = { name: string; timezone: string; currency: string; deposit_enabled?: boolean; deposit_type?: string; deposit_value?: number };
 
 export default function BookingPage() {
   const [step, setStep] = useState(1);
@@ -25,6 +25,11 @@ export default function BookingPage() {
   const [clientEmail, setClientEmail] = useState("");
   const [clientPhone, setClientPhone] = useState("");
   const [whatsappOptIn, setWhatsappOptIn] = useState(false);
+  const [paymentStep, setPaymentStep] = useState(false);
+  const [paymentLoading, setPaymentLoading] = useState(false);
+  const [bookingIdForPayment, setBookingIdForPayment] = useState<string | null>(null);
+  const [depositAmount, setDepositAmount] = useState<number>(0);
+  const [paymentComplete, setPaymentComplete] = useState(false);
 
   const [businessId, setBusinessId] = useState<string | null>(null);
 
@@ -68,6 +73,20 @@ export default function BookingPage() {
       });
   }, [businessId]);
 
+  // Calculate deposit amount for display
+  function getDepositDisplay(): { amount: number; label: string } | null {
+    if (!business?.deposit_enabled || !selectedService) return null;
+    const price = Number(selectedService.price);
+    if (business.deposit_type === "percentage") {
+      const amt = Math.round(price * ((business.deposit_value || 30) / 100) * 100) / 100;
+      return { amount: amt, label: `${business.deposit_value || 30}% deposit` };
+    }
+    const amt = Math.min(business.deposit_value || 0, price);
+    return { amount: amt, label: "Deposit" };
+  }
+  const deposit = getDepositDisplay();
+  const currencySymbol = business?.currency === "THB" ? "฿" : business?.currency === "EUR" ? "€" : business?.currency === "GBP" ? "£" : "$";
+
   const timeSlots = [
     "09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
     "12:00", "12:30", "13:00", "13:30", "14:00", "14:30",
@@ -101,7 +120,60 @@ export default function BookingPage() {
     setSubmitting(false);
 
     if (data.success) {
-      setBooked(true);
+      // If deposit is enabled, proceed to payment step
+      if (business?.deposit_enabled && data.booking_id) {
+        setBookingIdForPayment(data.booking_id);
+        setPaymentStep(true);
+        setPaymentLoading(true);
+
+        try {
+          const payRes = await fetch("/api/payment", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ booking_id: data.booking_id }),
+          });
+          const payData = await payRes.json();
+
+          if (payData.error) {
+            setError(payData.error);
+            setPaymentLoading(false);
+            return;
+          }
+
+          setDepositAmount(payData.deposit_amount);
+
+          // Load Airwallex drop-in
+          const { createElement, init } = await import("@airwallex/components-sdk");
+          await init({
+            env: payData.env,
+            origin: window.location.origin,
+          });
+
+          const element = await createElement("dropIn", {
+            intent_id: payData.intent_id,
+            client_secret: payData.client_secret,
+            currency: payData.currency.toLowerCase(),
+            methods: ["card", "prompt_pay"],
+          });
+
+          element?.mount("airwallex-dropin");
+          setPaymentLoading(false);
+
+          // Listen for payment success
+          const handleSuccess = () => {
+            setPaymentComplete(true);
+            setPaymentStep(false);
+            setBooked(true);
+            window.removeEventListener("onSuccess", handleSuccess);
+          };
+          window.addEventListener("onSuccess", handleSuccess);
+        } catch (err) {
+          setError("Failed to load payment form. Please try again.");
+          setPaymentLoading(false);
+        }
+      } else {
+        setBooked(true);
+      }
     } else {
       setError(data.error || "Booking failed. Please try again.");
     }
@@ -111,6 +183,52 @@ export default function BookingPage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <p className="text-gray-400">Loading...</p>
+      </div>
+    );
+  }
+
+  // Payment step: show Airwallex drop-in
+  if (paymentStep) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="bg-white border-b border-gray-200">
+          <div className="max-w-2xl mx-auto px-6 py-4 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-6 w-6 text-violet-600" />
+              <span className="font-bold">{business?.name || "SpaSoft"}</span>
+            </div>
+            <span className="text-sm text-gray-500">Deposit Payment</span>
+          </div>
+        </div>
+        <div className="max-w-lg mx-auto px-6 py-8">
+          <div className="bg-violet-50 border border-violet-200 rounded-xl p-4 mb-6">
+            <p className="font-semibold">{selectedService?.name}</p>
+            <p className="text-sm text-gray-600 mt-1">
+              {new Date(selectedDate + "T12:00:00").toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })} at {selectedTime}
+            </p>
+            <div className="flex items-center justify-between mt-3 pt-3 border-t border-violet-200">
+              <span className="text-sm text-gray-600">Deposit required</span>
+              <span className="text-lg font-bold text-violet-600">{currencySymbol}{depositAmount.toFixed(0)}</span>
+            </div>
+          </div>
+
+          {paymentLoading && (
+            <div className="text-center py-8">
+              <div className="animate-spin h-8 w-8 border-2 border-violet-600 border-t-transparent rounded-full mx-auto mb-3" />
+              <p className="text-gray-500 text-sm">Loading payment form...</p>
+            </div>
+          )}
+
+          <div id="airwallex-dropin" />
+
+          {error && (
+            <div className="mt-4 p-3 text-sm text-red-700 bg-red-50 rounded-lg">{error}</div>
+          )}
+
+          <p className="text-xs text-gray-400 text-center mt-6">
+            Secure payment powered by Airwallex
+          </p>
+        </div>
       </div>
     );
   }
@@ -126,6 +244,11 @@ export default function BookingPage() {
             <strong>{new Date(selectedDate).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}</strong>{" "}
             at <strong>{selectedTime}</strong> has been submitted.
           </p>
+          {paymentComplete && (
+            <p className="text-sm text-green-600 mt-2 font-medium">
+              Deposit of {currencySymbol}{depositAmount.toFixed(0)} paid successfully.
+            </p>
+          )}
           <p className="text-sm text-gray-500 mt-3">
             A confirmation has been sent to your email. We look forward to seeing you!
           </p>
@@ -210,7 +333,7 @@ export default function BookingPage() {
                           {s.description && <p className="text-xs text-gray-500 mt-0.5">{s.description}</p>}
                         </div>
                         <div className="text-right">
-                          <p className="font-bold text-violet-600">${Number(s.price).toFixed(0)}</p>
+                          <p className="font-bold text-violet-600">{currencySymbol}{Number(s.price).toFixed(0)}</p>
                           <p className="text-xs text-gray-400 flex items-center gap-1">
                             <Clock className="h-3 w-3" /> {s.duration} min
                           </p>
@@ -333,7 +456,13 @@ export default function BookingPage() {
                   <Clock className="h-3.5 w-3.5" /> {selectedTime}
                 </span>
               </p>
-              <p className="text-sm font-bold text-violet-600 mt-1">${Number(selectedService?.price).toFixed(0)}</p>
+              <p className="text-sm font-bold text-violet-600 mt-1">{currencySymbol}{Number(selectedService?.price).toFixed(0)}</p>
+              {deposit && (
+                <p className="text-xs text-amber-600 mt-1 flex items-center gap-1">
+                  <CreditCard className="h-3 w-3" />
+                  {deposit.label}: {currencySymbol}{deposit.amount.toFixed(0)} due at booking
+                </p>
+              )}
             </div>
 
             <div className="space-y-4">

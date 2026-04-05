@@ -7,6 +7,9 @@ export type Business = {
   timezone: string;
   currency: string;
   plan: string;
+  deposit_enabled: boolean;
+  deposit_type: "percentage" | "fixed";
+  deposit_value: number;
   created_at: string;
 };
 
@@ -70,7 +73,7 @@ export type Payment = {
   client_id: string | null;
   amount: number;
   currency: string;
-  method: "card" | "cash" | "apple_pay" | "google_pay" | "other";
+  method: "card" | "cash" | "apple_pay" | "google_pay" | "promptpay" | "airwallex" | "other";
   status: "pending" | "completed" | "refunded" | "failed";
   stripe_payment_intent_id: string | null;
   created_at: string;

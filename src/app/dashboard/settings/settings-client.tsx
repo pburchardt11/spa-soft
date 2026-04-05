@@ -10,7 +10,7 @@ export default function SettingsClient({
   business,
   notificationSettings,
 }: {
-  business: Record<string, string> | null;
+  business: Record<string, any> | null;
   notificationSettings: NotificationSettings | null;
 }) {
   const [businessName, setBusinessName] = useState(business?.name || "");
@@ -37,13 +37,23 @@ export default function SettingsClient({
   const [savingNotif, setSavingNotif] = useState(false);
   const [savedNotif, setSavedNotif] = useState(false);
 
+  // Deposit settings
+  const [depositEnabled, setDepositEnabled] = useState(!!business?.deposit_enabled);
+  const [depositType, setDepositType] = useState(String(business?.deposit_type || "percentage"));
+  const [depositValue, setDepositValue] = useState(Number(business?.deposit_value) || 30);
+
   async function handleSave() {
     if (!business?.id) return;
     setSaving(true);
     const supabase = createClient();
     await supabase
       .from("businesses")
-      .update({ name: businessName, email, phone, address, timezone, currency })
+      .update({
+        name: businessName, email, phone, address, timezone, currency,
+        deposit_enabled: depositEnabled,
+        deposit_type: depositType,
+        deposit_value: depositValue,
+      })
       .eq("id", business.id);
     setSaving(false);
     setSaved(true);
@@ -175,6 +185,60 @@ export default function SettingsClient({
             </select>
           </div>
         </div>
+      </div>
+
+      {/* Deposit Settings */}
+      <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="font-semibold">Booking Deposits</h2>
+            <p className="text-sm text-gray-500 mt-0.5">Require a deposit when clients book online to reduce no-shows</p>
+          </div>
+          <label className="relative inline-flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              checked={depositEnabled}
+              onChange={(e) => setDepositEnabled(e.target.checked)}
+              className="sr-only peer"
+            />
+            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-violet-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-violet-600" />
+          </label>
+        </div>
+        {depositEnabled && (
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Deposit Type</label>
+                <select
+                  value={depositType}
+                  onChange={(e) => setDepositType(e.target.value)}
+                  className={inputClass}
+                >
+                  <option value="percentage">Percentage of service price</option>
+                  <option value="fixed">Fixed amount</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {depositType === "percentage" ? "Percentage (%)" : `Amount (${currency})`}
+                </label>
+                <input
+                  type="number"
+                  value={depositValue}
+                  onChange={(e) => setDepositValue(Number(e.target.value))}
+                  min={1}
+                  max={depositType === "percentage" ? 100 : 99999}
+                  className={inputClass}
+                />
+              </div>
+            </div>
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+              <p className="text-sm text-amber-800">
+                Deposits are collected via Airwallex (card &amp; PromptPay). Configure your Airwallex API credentials in Vercel environment variables.
+              </p>
+            </div>
+          </div>
+        )}
       </div>
 
       <button
