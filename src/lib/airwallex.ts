@@ -67,3 +67,84 @@ export async function createPaymentIntent(params: {
 export function getAirwallexEnv(): "demo" | "prod" {
   return process.env.AIRWALLEX_ENV === "demo" ? "demo" : "prod";
 }
+
+// --- Subscription helpers ---
+
+async function airwallexFetch(path: string, options: RequestInit = {}) {
+  const token = await getAccessToken();
+  const res = await fetch(`${BASE_URL}${path}`, {
+    ...options,
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`Airwallex ${path} failed: ${err}`);
+  }
+  return res.json();
+}
+
+export async function createCustomer(params: {
+  email: string;
+  businessName: string;
+  businessId: string;
+}): Promise<{ id: string }> {
+  return airwallexFetch("/api/v1/pa/customers/create", {
+    method: "POST",
+    body: JSON.stringify({
+      email: params.email,
+      business_name: params.businessName,
+      merchant_customer_id: params.businessId,
+      request_id: crypto.randomUUID(),
+    }),
+  });
+}
+
+export async function createPaymentConsent(params: {
+  customerId: string;
+  currency: string;
+}): Promise<{ id: string; client_secret: string }> {
+  return airwallexFetch("/api/v1/pa/payment_consents/create", {
+    method: "POST",
+    body: JSON.stringify({
+      customer_id: params.customerId,
+      currency: params.currency.toLowerCase(),
+      merchant_trigger_reason: "scheduled",
+      request_id: crypto.randomUUID(),
+      next_triggered_by: "merchant",
+      requires_payment_method: true,
+    }),
+  });
+}
+
+export async function createSubscription(params: {
+  customerId: string;
+  priceId: string;
+  paymentConsentId: string;
+}): Promise<{ id: string; status: string }> {
+  return airwallexFetch("/api/v1/pa/subscriptions/create", {
+    method: "POST",
+    body: JSON.stringify({
+      customer_id: params.customerId,
+      items: [{ price_id: params.priceId, quantity: 1 }],
+      payment_consent_id: params.paymentConsentId,
+      request_id: crypto.randomUUID(),
+    }),
+  });
+}
+
+export async function cancelSubscription(subscriptionId: string): Promise<void> {
+  await airwallexFetch(`/api/v1/pa/subscriptions/${subscriptionId}/cancel`, {
+    method: "POST",
+    body: JSON.stringify({ request_id: crypto.randomUUID() }),
+  });
+}
+
+export async function getSubscription(subscriptionId: string): Promise<any> {
+  return airwallexFetch(`/api/v1/pa/subscriptions/${subscriptionId}`, {
+    method: "GET",
+  });
+}

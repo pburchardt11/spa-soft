@@ -36,7 +36,7 @@ export async function GET(request: Request) {
       .order("name"),
     supabase
       .from("businesses")
-      .select("name, timezone, currency")
+      .select("name, timezone, currency, deposit_enabled, deposit_type, deposit_value")
       .eq("id", businessId)
       .single(),
   ]);

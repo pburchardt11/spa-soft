@@ -96,5 +96,27 @@ export async function POST(request: Request) {
     }
   }
 
+  // --- Subscription events ---
+
+  if (event.name === "subscription.activated") {
+    const subscriptionId = event.data?.object?.id;
+    if (subscriptionId) {
+      await admin
+        .from("businesses")
+        .update({ subscription_status: "active" })
+        .eq("airwallex_subscription_id", subscriptionId);
+    }
+  }
+
+  if (event.name === "subscription.cancelled" || event.name === "subscription.completed") {
+    const subscriptionId = event.data?.object?.id;
+    if (subscriptionId) {
+      await admin
+        .from("businesses")
+        .update({ subscription_status: "cancelled" })
+        .eq("airwallex_subscription_id", subscriptionId);
+    }
+  }
+
   return NextResponse.json({ received: true });
 }
