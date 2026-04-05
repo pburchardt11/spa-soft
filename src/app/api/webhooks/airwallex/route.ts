@@ -98,7 +98,7 @@ export async function POST(request: Request) {
 
   // --- Subscription events ---
 
-  if (event.name === "subscription.activated") {
+  if (event.name === "subscription.active" || event.name === "subscription.activated") {
     const subscriptionId = event.data?.object?.id;
     if (subscriptionId) {
       await admin
@@ -108,12 +108,22 @@ export async function POST(request: Request) {
     }
   }
 
-  if (event.name === "subscription.cancelled" || event.name === "subscription.completed") {
+  if (event.name === "subscription.cancelled") {
     const subscriptionId = event.data?.object?.id;
     if (subscriptionId) {
       await admin
         .from("businesses")
         .update({ subscription_status: "cancelled" })
+        .eq("airwallex_subscription_id", subscriptionId);
+    }
+  }
+
+  if (event.name === "subscription.unpaid") {
+    const subscriptionId = event.data?.object?.id;
+    if (subscriptionId) {
+      await admin
+        .from("businesses")
+        .update({ subscription_status: "past_due" })
         .eq("airwallex_subscription_id", subscriptionId);
     }
   }
