@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { getAdminClient } from "@/lib/actions/helpers";
+import { getNotificationSettings } from "@/lib/actions/notifications";
 import SettingsClient from "./settings-client";
 
 export default async function SettingsPage() {
@@ -25,5 +26,7 @@ export default async function SettingsPage() {
     }
   }
 
-  return <SettingsClient business={business} />;
+  const notifSettings = await getNotificationSettings();
+
+  return <SettingsClient business={business} notificationSettings={notifSettings} />;
 }

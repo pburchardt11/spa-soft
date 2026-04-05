@@ -78,3 +78,52 @@ export type Payment = {
   client?: Client;
   booking?: Booking;
 };
+
+export type NotificationChannel = "email" | "line" | "whatsapp";
+
+export type NotificationEvent =
+  | "booking_confirmed"
+  | "booking_reminder"
+  | "booking_cancelled"
+  | "booking_completed"
+  | "welcome";
+
+export type NotificationPreference = {
+  id: string;
+  business_id: string;
+  client_id: string;
+  channel: NotificationChannel;
+  identifier: string;
+  opted_in: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type NotificationLog = {
+  id: string;
+  business_id: string;
+  client_id: string | null;
+  booking_id: string | null;
+  channel: NotificationChannel;
+  event: NotificationEvent;
+  status: "pending" | "sent" | "failed";
+  error_message: string | null;
+  sent_at: string | null;
+  created_at: string;
+};
+
+export type NotificationSettings = {
+  id: string;
+  business_id: string;
+  email_enabled: boolean;
+  email_from_name: string | null;
+  line_enabled: boolean;
+  line_channel_access_token: string | null;
+  line_channel_secret: string | null;
+  whatsapp_enabled: boolean;
+  whatsapp_access_token: string | null;
+  whatsapp_phone_number_id: string | null;
+  reminder_hours_before: number;
+  created_at: string;
+  updated_at: string;
+};

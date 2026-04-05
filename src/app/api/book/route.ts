@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
+import { notifyClient } from "@/lib/notifications";
 
 function getSupabase() {
   return createServerClient(
@@ -108,6 +109,39 @@ export async function POST(request: Request) {
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  // Send notification for new online booking (fire and forget)
+  if (booking?.id) {
+    notifyClient("booking_confirmed", { bookingId: booking.id, businessId: business_id }).catch(() => {});
+
+    // Auto-create email notification preference for online bookings
+    if (client_email) {
+      await supabase.from("notification_preferences").upsert(
+        {
+          business_id,
+          client_id: client?.id,
+          channel: "email",
+          identifier: client_email,
+          opted_in: true,
+        },
+        { onConflict: "business_id,client_id,channel" }
+      );
+    }
+
+    // Auto-create WhatsApp preference if phone provided and opted in
+    if (client_phone && body.whatsapp_opt_in) {
+      await supabase.from("notification_preferences").upsert(
+        {
+          business_id,
+          client_id: client?.id,
+          channel: "whatsapp",
+          identifier: client_phone.replace(/[^0-9+]/g, ""),
+          opted_in: true,
+        },
+        { onConflict: "business_id,client_id,channel" }
+      );
+    }
   }
 
   return NextResponse.json({ booking_id: booking?.id, success: true });

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { getBusinessId, getAdminClient } from "./helpers";
+import { notifyClient } from "@/lib/notifications";
 
 export async function createBooking(formData: FormData) {
   const admin = await getAdminClient();
@@ -48,7 +49,7 @@ export async function createBooking(formData: FormData) {
     new Date(startTime).getTime() + (service?.duration || 60) * 60000
   ).toISOString();
 
-  const { error } = await admin.from("bookings").insert({
+  const { data: booking, error } = await admin.from("bookings").insert({
     business_id: businessId,
     client_id: clientId,
     staff_id: formData.get("staff_id") as string,
@@ -57,9 +58,14 @@ export async function createBooking(formData: FormData) {
     end_time: endTime,
     status: "confirmed",
     notes: (formData.get("notes") as string) || null,
-  });
+  }).select("id").single();
 
   if (error) return { error: error.message };
+
+  // Send booking confirmation notification (fire and forget)
+  if (booking) {
+    notifyClient("booking_confirmed", { bookingId: booking.id, businessId }).catch(() => {});
+  }
 
   revalidatePath("/dashboard/bookings");
   revalidatePath("/dashboard/clients");
@@ -69,6 +75,7 @@ export async function createBooking(formData: FormData) {
 
 export async function updateBookingStatus(id: string, status: string) {
   const admin = await getAdminClient();
+  const businessId = await getBusinessId();
 
   const { error } = await admin
     .from("bookings")
@@ -76,6 +83,19 @@ export async function updateBookingStatus(id: string, status: string) {
     .eq("id", id);
 
   if (error) return { error: error.message };
+
+  // Send notification based on status change
+  if (businessId) {
+    const eventMap: Record<string, string> = {
+      confirmed: "booking_confirmed",
+      cancelled: "booking_cancelled",
+      completed: "booking_completed",
+    };
+    const event = eventMap[status];
+    if (event) {
+      notifyClient(event as any, { bookingId: id, businessId }).catch(() => {});
+    }
+  }
 
   revalidatePath("/dashboard/bookings");
   revalidatePath("/dashboard");

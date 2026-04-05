@@ -24,6 +24,7 @@ export default function BookingPage() {
   const [clientName, setClientName] = useState("");
   const [clientEmail, setClientEmail] = useState("");
   const [clientPhone, setClientPhone] = useState("");
+  const [whatsappOptIn, setWhatsappOptIn] = useState(false);
 
   const [businessId, setBusinessId] = useState<string | null>(null);
 
@@ -92,6 +93,7 @@ export default function BookingPage() {
         client_name: clientName,
         client_email: clientEmail,
         client_phone: clientPhone,
+        whatsapp_opt_in: whatsappOptIn && clientPhone ? true : false,
       }),
     });
 
@@ -125,7 +127,7 @@ export default function BookingPage() {
             at <strong>{selectedTime}</strong> has been submitted.
           </p>
           <p className="text-sm text-gray-500 mt-3">
-            You&apos;ll receive a confirmation once the spa reviews your booking.
+            A confirmation has been sent to your email. We look forward to seeing you!
           </p>
           <div className="mt-4 text-sm text-gray-400">
             Powered by <span className="font-semibold text-violet-600">SpaSoft</span>
@@ -363,10 +365,21 @@ export default function BookingPage() {
                   type="tel"
                   value={clientPhone}
                   onChange={(e) => setClientPhone(e.target.value)}
-                  placeholder="(optional)"
+                  placeholder="e.g. +66812345678"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
                 />
               </div>
+              {clientPhone && (
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={whatsappOptIn}
+                    onChange={(e) => setWhatsappOptIn(e.target.checked)}
+                    className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
+                  />
+                  <span className="text-sm text-gray-700">Send me booking updates on WhatsApp</span>
+                </label>
+              )}
             </div>
 
             <div className="flex gap-3 mt-6">
