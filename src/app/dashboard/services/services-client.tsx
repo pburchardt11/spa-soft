@@ -195,6 +195,22 @@ export default function ServicesClient({ initialServices }: { initialServices: S
                 </datalist>
                 <p className="text-xs text-gray-400 mt-1">Pick from the list or type a new category name</p>
               </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Commission Rate Override (%)
+                </label>
+                <input
+                  name="commission_rate"
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.5"
+                  defaultValue={(editingService as any)?.commission_rate ?? ""}
+                  placeholder="Leave blank to use staff default"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+                />
+                <p className="text-xs text-gray-400 mt-1">Overrides the staff member&apos;s default commission rate for this service</p>
+              </div>
               {editingService && (
                 <div className="flex items-center gap-2">
                   <input type="hidden" name="active" value={editingService.active ? "true" : "false"} />

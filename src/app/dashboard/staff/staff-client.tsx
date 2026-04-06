@@ -175,6 +175,24 @@ export default function StaffClient({
                   </select>
                 </div>
               )}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Commission Rate (%)
+                </label>
+                <input
+                  name="commission_rate"
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.5"
+                  defaultValue={(editingStaff as any)?.commission_rate ?? 0}
+                  placeholder="e.g. 30"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+                />
+                <p className="text-xs text-gray-400 mt-1">
+                  Percentage of service price earned per completed booking
+                </p>
+              </div>
               {!editingStaff && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Color</label>

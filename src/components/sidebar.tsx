@@ -23,6 +23,7 @@ import {
   ChevronDown,
   Star,
   Package,
+  DollarSign,
 } from "lucide-react";
 import { signOut } from "@/lib/actions/auth";
 import { setCurrentBranch } from "@/lib/actions/branches";
@@ -38,6 +39,7 @@ const nav = [
   { href: "/dashboard/schedule", label: "Schedule", icon: CalendarClock },
   { href: "/dashboard/branches", label: "Branches", icon: MapPin },
   { href: "/dashboard/payments", label: "Payments", icon: CreditCard },
+  { href: "/dashboard/commissions", label: "Commissions", icon: DollarSign },
   { href: "/dashboard/reviews", label: "Reviews", icon: Star },
   { href: "/dashboard/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/dashboard/billing", label: "Billing", icon: Receipt },

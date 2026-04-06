@@ -37,6 +37,7 @@ export type Staff = {
   role: "owner" | "manager" | "therapist" | "receptionist";
   color: string;
   active: boolean;
+  commission_rate: number;
   created_at: string;
 };
 
@@ -49,6 +50,7 @@ export type Service = {
   price: number;
   category: string | null;
   active: boolean;
+  commission_rate: number | null;
   created_at: string;
 };
 

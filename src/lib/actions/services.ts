@@ -19,6 +19,7 @@ export async function createServiceAction(formData: FormData) {
   const businessId = await getBusinessId();
   if (!businessId) return { error: "No business found" };
 
+  const commissionRate = formData.get("commission_rate") as string;
   const { error } = await supabase.from("services").insert({
     business_id: businessId,
     name: formData.get("name") as string,
@@ -26,6 +27,7 @@ export async function createServiceAction(formData: FormData) {
     duration: parseInt(formData.get("duration") as string),
     price: parseFloat(formData.get("price") as string),
     category: (formData.get("category") as string) || null,
+    commission_rate: commissionRate ? parseFloat(commissionRate) : null,
   });
 
   if (error) return { error: error.message };
@@ -36,6 +38,7 @@ export async function createServiceAction(formData: FormData) {
 export async function updateServiceAction(id: string, formData: FormData) {
   const supabase = await createClient();
 
+  const commissionRate = formData.get("commission_rate") as string;
   const { error } = await supabase
     .from("services")
     .update({
@@ -44,6 +47,7 @@ export async function updateServiceAction(id: string, formData: FormData) {
       duration: parseInt(formData.get("duration") as string),
       price: parseFloat(formData.get("price") as string),
       category: (formData.get("category") as string) || null,
+      commission_rate: commissionRate ? parseFloat(commissionRate) : null,
       active: formData.get("active") === "true",
     })
     .eq("id", id);

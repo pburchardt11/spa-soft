@@ -16,6 +16,7 @@ export async function createStaffAction(formData: FormData) {
     phone: (formData.get("phone") as string) || null,
     role: (formData.get("role") as string) || "therapist",
     color: (formData.get("color") as string) || "#7c3aed",
+    commission_rate: parseFloat(formData.get("commission_rate") as string) || 0,
   });
 
   if (error) return { error: error.message };
@@ -34,6 +35,7 @@ export async function updateStaffAction(id: string, formData: FormData) {
       phone: (formData.get("phone") as string) || null,
       role: formData.get("role") as string,
       branch_id: (formData.get("branch_id") as string) || null,
+      commission_rate: parseFloat(formData.get("commission_rate") as string) || 0,
       active: formData.get("active") === "true",
     })
     .eq("id", id);
