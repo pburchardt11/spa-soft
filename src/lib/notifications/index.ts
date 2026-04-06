@@ -24,6 +24,7 @@ type BookingDetails = {
   date: string;
   time: string;
   businessName: string;
+  reviewLink?: string;
 };
 
 async function getBookingDetails(
@@ -47,6 +48,8 @@ async function getBookingDetails(
   const date = start.toLocaleDateString("en-US", { timeZone: tz, weekday: "short", month: "short", day: "numeric" });
   const time = start.toLocaleTimeString("en-US", { timeZone: tz, hour: "numeric", minute: "2-digit" });
 
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://www.spa-soft.com";
+
   return {
     clientName: (booking.clients as any)?.name || "Guest",
     serviceName: (booking.services as any)?.name || "Appointment",
@@ -54,6 +57,7 @@ async function getBookingDetails(
     date,
     time,
     businessName: (booking.businesses as any)?.name || "Our Spa",
+    reviewLink: `${baseUrl}/review/${bookingId}`,
   };
 }
 

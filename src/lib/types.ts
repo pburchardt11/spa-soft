@@ -97,6 +97,24 @@ export type Payment = {
   booking?: Booking;
 };
 
+export type Review = {
+  id: string;
+  business_id: string;
+  branch_id: string | null;
+  booking_id: string | null;
+  client_id: string | null;
+  staff_id: string | null;
+  rating: number;
+  comment: string | null;
+  status: "pending" | "approved" | "hidden";
+  created_at: string;
+  // Joined
+  client?: Client;
+  staff?: Staff;
+  service?: Service;
+  booking?: Booking;
+};
+
 export type NotificationChannel = "email" | "line" | "whatsapp";
 
 export type NotificationEvent =
@@ -104,7 +122,8 @@ export type NotificationEvent =
   | "booking_reminder"
   | "booking_cancelled"
   | "booking_completed"
-  | "welcome";
+  | "welcome"
+  | "review_request";
 
 export type NotificationPreference = {
   id: string;

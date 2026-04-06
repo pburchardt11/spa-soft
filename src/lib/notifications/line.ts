@@ -7,6 +7,7 @@ type BookingDetails = {
   date: string;
   time: string;
   businessName: string;
+  reviewLink?: string;
 };
 
 const templates: Record<NotificationEvent, (d: BookingDetails) => string> = {
@@ -20,6 +21,8 @@ const templates: Record<NotificationEvent, (d: BookingDetails) => string> = {
     `🙏 Thank you, ${d.clientName}!\n\nWe hope you enjoyed your ${d.serviceName} at ${d.businessName}. We'd love to see you again!\n\n— ${d.businessName}`,
   welcome: (d) =>
     `🎉 Welcome to ${d.businessName}!\n\nHi ${d.clientName}, thank you for joining us. Book your next appointment anytime!`,
+  review_request: (d) =>
+    `⭐ How was your visit, ${d.clientName}?\n\nThank you for choosing ${d.businessName}. We'd love your feedback!\n\nLeave a quick review here:\n${d.reviewLink || ""}`,
 };
 
 export async function sendLineMessage(

@@ -7,6 +7,7 @@ type BookingDetails = {
   date: string;
   time: string;
   businessName: string;
+  reviewLink?: string;
 };
 
 // WhatsApp requires pre-approved message templates.
@@ -47,6 +48,10 @@ const templateMap: Record<NotificationEvent, { name: string; params: (d: Booking
   welcome: {
     name: "welcome_message",
     params: (d) => [d.businessName, d.clientName],
+  },
+  review_request: {
+    name: "review_request",
+    params: (d) => [d.clientName, d.businessName, d.reviewLink || ""],
   },
 };
 

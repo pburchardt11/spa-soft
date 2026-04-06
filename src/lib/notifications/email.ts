@@ -12,6 +12,7 @@ type BookingDetails = {
   date: string; // formatted date string
   time: string; // formatted time string
   businessName: string;
+  reviewLink?: string;
 };
 
 const subjects: Record<NotificationEvent, string> = {
@@ -20,6 +21,7 @@ const subjects: Record<NotificationEvent, string> = {
   booking_cancelled: "Your booking has been cancelled",
   booking_completed: "Thank you for your visit!",
   welcome: "Welcome!",
+  review_request: "How was your visit? Share your feedback",
 };
 
 function buildEmailHtml(event: NotificationEvent, details: BookingDetails): string {
@@ -70,6 +72,18 @@ function buildEmailHtml(event: NotificationEvent, details: BookingDetails): stri
       <p>Hi ${clientName},</p>
       <p>Thank you for joining us. We're excited to have you as a client!</p>
       <p>You can book your next appointment anytime through our online booking page.</p>
+    `,
+    review_request: `
+      <h2 style="color:#7c3aed;">How was your visit?</h2>
+      <p>Hi ${clientName},</p>
+      <p>Thank you for visiting <strong>${businessName}</strong>. We'd love to hear about your experience.</p>
+      ${bookingBlock}
+      <p style="text-align:center;margin:24px 0;">
+        <a href="${details.reviewLink || '#'}" style="display:inline-block;background:#7c3aed;color:#ffffff;text-decoration:none;padding:12px 28px;border-radius:8px;font-weight:600;">
+          Leave a Review
+        </a>
+      </p>
+      <p style="color:#6b7280;font-size:13px;">Your feedback helps us improve and helps other clients choose us.</p>
     `,
   };
 

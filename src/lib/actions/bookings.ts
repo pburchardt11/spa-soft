@@ -99,6 +99,10 @@ export async function updateBookingStatus(id: string, status: string) {
     if (event) {
       notifyClient(event as any, { bookingId: id, businessId }).catch(() => {});
     }
+    // Also send review request when booking is marked completed
+    if (status === "completed") {
+      notifyClient("review_request", { bookingId: id, businessId }).catch(() => {});
+    }
   }
 
   revalidatePath("/dashboard/bookings");
