@@ -22,6 +22,7 @@ import {
   MapPin,
   ChevronDown,
   Star,
+  Package,
 } from "lucide-react";
 import { signOut } from "@/lib/actions/auth";
 import { setCurrentBranch } from "@/lib/actions/branches";
@@ -33,6 +34,7 @@ const nav = [
   { href: "/dashboard/clients", label: "Clients", icon: Users },
   { href: "/dashboard/staff", label: "Staff", icon: UserCog },
   { href: "/dashboard/services", label: "Services", icon: Scissors },
+  { href: "/dashboard/products", label: "Products", icon: Package },
   { href: "/dashboard/schedule", label: "Schedule", icon: CalendarClock },
   { href: "/dashboard/branches", label: "Branches", icon: MapPin },
   { href: "/dashboard/payments", label: "Payments", icon: CreditCard },

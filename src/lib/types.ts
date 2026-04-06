@@ -97,6 +97,43 @@ export type Payment = {
   booking?: Booking;
 };
 
+export type Product = {
+  id: string;
+  business_id: string;
+  branch_id: string | null;
+  name: string;
+  description: string | null;
+  sku: string | null;
+  category: string | null;
+  price: number;
+  cost: number | null;
+  stock: number;
+  low_stock_threshold: number;
+  image_url: string | null;
+  active: boolean;
+  created_at: string;
+};
+
+export type ProductSale = {
+  id: string;
+  business_id: string;
+  branch_id: string | null;
+  product_id: string | null;
+  client_id: string | null;
+  staff_id: string | null;
+  booking_id: string | null;
+  quantity: number;
+  unit_price: number;
+  total: number;
+  payment_method: string | null;
+  notes: string | null;
+  created_at: string;
+  // Joined
+  product?: Product;
+  client?: Client;
+  staff?: Staff;
+};
+
 export type Review = {
   id: string;
   business_id: string;
