@@ -287,34 +287,39 @@ export default function BookingPage() {
   });
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-2xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Sparkles className="h-6 w-6 text-violet-600" />
-            <span className="font-bold">{business?.name || "SpaSoft"}</span>
+    <div className="min-h-screen bg-gray-50 pb-24 md:pb-8">
+      {/* Sticky Header */}
+      <div className="bg-white border-b border-gray-200 sticky top-0 z-20">
+        <div className="max-w-2xl mx-auto px-4 md:px-6 py-3 md:py-4 flex items-center justify-between">
+          <div className="flex items-center gap-2 min-w-0">
+            <Sparkles className="h-5 w-5 md:h-6 md:w-6 text-violet-600 shrink-0" />
+            <span className="font-bold text-sm md:text-base truncate">{business?.name || "SpaSoft"}</span>
           </div>
-          <span className="text-sm text-gray-500">Online Booking</span>
+          <span className="text-xs md:text-sm text-gray-500 shrink-0 ml-2">Book Online</span>
         </div>
       </div>
 
-      <div className="max-w-2xl mx-auto px-6 py-8">
-        {/* Steps */}
-        <div className="flex items-center gap-2 mb-8">
-          {["Service", "Date & Time", "Your Details"].map((label, i) => (
-            <div key={label} className="flex items-center gap-2">
-              <div className={`h-8 w-8 rounded-full flex items-center justify-center text-sm font-bold ${
-                step > i + 1 ? "bg-green-500 text-white" :
-                step === i + 1 ? "bg-violet-600 text-white" :
-                "bg-gray-200 text-gray-500"
-              }`}>
-                {step > i + 1 ? "\u2713" : i + 1}
-              </div>
-              <span className={`text-sm font-medium ${step === i + 1 ? "text-gray-900" : "text-gray-400"}`}>{label}</span>
-              {i < 2 && <div className="w-8 h-px bg-gray-300" />}
-            </div>
-          ))}
+      <div className="max-w-2xl mx-auto px-4 md:px-6 py-5 md:py-8">
+        {/* Mobile: compact step indicator with progress bar */}
+        <div className="mb-6 md:mb-8">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+              Step {step} of 3
+            </p>
+            <p className="text-sm font-semibold text-gray-900">
+              {step === 1 ? "Choose a Service" : step === 2 ? "Date & Time" : "Your Details"}
+            </p>
+          </div>
+          <div className="flex gap-1.5">
+            {[1, 2, 3].map((i) => (
+              <div
+                key={i}
+                className={`h-1.5 flex-1 rounded-full transition ${
+                  step >= i ? "bg-violet-600" : "bg-gray-200"
+                }`}
+              />
+            ))}
+          </div>
         </div>
 
         {error && (
@@ -325,20 +330,20 @@ export default function BookingPage() {
         {branches.length > 1 && step === 1 && (
           <div className="mb-6">
             <label className="block text-sm font-medium text-gray-700 mb-2">Location</label>
-            <div className="flex gap-2 flex-wrap">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {branches.map((b) => (
                 <button
                   key={b.id}
                   onClick={() => setBranchId(b.id)}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+                  className={`text-left px-4 py-3 rounded-xl text-sm font-medium transition ${
                     branchId === b.id
                       ? "bg-violet-600 text-white"
                       : "bg-white border border-gray-200 hover:border-violet-300"
                   }`}
                 >
-                  {b.name}
+                  <span className="block font-semibold">{b.name}</span>
                   {b.address && (
-                    <span className="block text-xs opacity-80 mt-0.5">{b.address}</span>
+                    <span className="block text-xs opacity-80 mt-0.5 line-clamp-1">{b.address}</span>
                   )}
                 </button>
               ))}
@@ -349,31 +354,30 @@ export default function BookingPage() {
         {/* Step 1: Choose Service */}
         {step === 1 && (
           <div>
-            <h2 className="text-xl font-bold mb-4">Choose a Service</h2>
             {Object.entries(grouped).map(([cat, svcs]) => (
               <div key={cat} className="mb-6">
-                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2">{cat}</h3>
+                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2 px-1">{cat}</h3>
                 <div className="space-y-2">
                   {svcs.map((s) => (
                     <button
                       key={s.id}
                       onClick={() => { setSelectedService(s); setStep(2); }}
-                      className={`w-full text-left p-4 rounded-xl border transition ${
+                      className={`w-full text-left p-4 rounded-xl border transition active:scale-[0.99] ${
                         selectedService?.id === s.id
                           ? "border-violet-600 bg-violet-50"
                           : "border-gray-200 bg-white hover:border-violet-300"
                       }`}
                     >
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-semibold">{s.name}</p>
-                          {s.description && <p className="text-xs text-gray-500 mt-0.5">{s.description}</p>}
-                        </div>
-                        <div className="text-right">
-                          <p className="font-bold text-violet-600">{currencySymbol}{Number(s.price).toFixed(0)}</p>
-                          <p className="text-xs text-gray-400 flex items-center gap-1">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0 flex-1">
+                          <p className="font-semibold text-base">{s.name}</p>
+                          {s.description && <p className="text-sm text-gray-500 mt-1 line-clamp-2">{s.description}</p>}
+                          <p className="text-xs text-gray-400 flex items-center gap-1 mt-2">
                             <Clock className="h-3 w-3" /> {s.duration} min
                           </p>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <p className="font-bold text-violet-600 text-lg">{currencySymbol}{Number(s.price).toFixed(0)}</p>
                         </div>
                       </div>
                     </button>
@@ -387,16 +391,14 @@ export default function BookingPage() {
         {/* Step 2: Date & Time */}
         {step === 2 && (
           <div>
-            <h2 className="text-xl font-bold mb-4">Pick a Date & Time</h2>
-
             {staff.length > 0 && (
               <div className="mb-6">
                 <label className="block text-sm font-medium text-gray-700 mb-2">Therapist (optional)</label>
-                <div className="flex gap-2 flex-wrap">
+                <div className="flex gap-2 overflow-x-auto -mx-4 px-4 pb-2 scrollbar-hide">
                   <button
                     onClick={() => setSelectedStaff("")}
-                    className={`px-3 py-2 rounded-lg text-sm font-medium transition ${
-                      !selectedStaff ? "bg-violet-100 text-violet-700" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    className={`shrink-0 px-4 py-2.5 rounded-lg text-sm font-medium transition ${
+                      !selectedStaff ? "bg-violet-100 text-violet-700" : "bg-gray-100 text-gray-600"
                     }`}
                   >
                     No preference
@@ -405,8 +407,8 @@ export default function BookingPage() {
                     <button
                       key={s.id}
                       onClick={() => setSelectedStaff(s.id)}
-                      className={`px-3 py-2 rounded-lg text-sm font-medium transition ${
-                        selectedStaff === s.id ? "bg-violet-100 text-violet-700" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                      className={`shrink-0 px-4 py-2.5 rounded-lg text-sm font-medium transition ${
+                        selectedStaff === s.id ? "bg-violet-100 text-violet-700" : "bg-gray-100 text-gray-600"
                       }`}
                     >
                       {s.name}
@@ -418,22 +420,22 @@ export default function BookingPage() {
 
             <div className="mb-6">
               <label className="block text-sm font-medium text-gray-700 mb-2">Date</label>
-              <div className="flex gap-2 flex-wrap">
+              <div className="flex gap-2 overflow-x-auto -mx-4 px-4 pb-2 scrollbar-hide">
                 {dates.map((d) => {
                   const date = new Date(d + "T12:00:00");
                   return (
                     <button
                       key={d}
                       onClick={() => setSelectedDate(d)}
-                      className={`px-3 py-2 rounded-lg text-center transition ${
+                      className={`shrink-0 min-w-[64px] px-3 py-3 rounded-xl text-center transition ${
                         selectedDate === d
                           ? "bg-violet-600 text-white"
-                          : "bg-white border border-gray-200 hover:border-violet-300"
+                          : "bg-white border border-gray-200"
                       }`}
                     >
-                      <p className="text-xs font-medium">{date.toLocaleDateString("en-US", { weekday: "short" })}</p>
-                      <p className="text-sm font-bold">{date.getDate()}</p>
-                      <p className="text-xs">{date.toLocaleDateString("en-US", { month: "short" })}</p>
+                      <p className="text-xs font-medium opacity-80">{date.toLocaleDateString("en-US", { weekday: "short" })}</p>
+                      <p className="text-lg font-bold mt-0.5">{date.getDate()}</p>
+                      <p className="text-xs opacity-80">{date.toLocaleDateString("en-US", { month: "short" })}</p>
                     </button>
                   );
                 })}
@@ -443,15 +445,15 @@ export default function BookingPage() {
             {selectedDate && (
               <div className="mb-6">
                 <label className="block text-sm font-medium text-gray-700 mb-2">Time</label>
-                <div className="grid grid-cols-4 gap-2">
+                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
                   {timeSlots.map((t) => (
                     <button
                       key={t}
                       onClick={() => setSelectedTime(t)}
-                      className={`py-2 rounded-lg text-sm font-medium transition ${
+                      className={`py-3 rounded-lg text-sm font-semibold transition ${
                         selectedTime === t
                           ? "bg-violet-600 text-white"
-                          : "bg-white border border-gray-200 hover:border-violet-300"
+                          : "bg-white border border-gray-200"
                       }`}
                     >
                       {t}
@@ -460,114 +462,125 @@ export default function BookingPage() {
                 </div>
               </div>
             )}
-
-            <div className="flex gap-3 mt-6">
-              <button onClick={() => setStep(1)} className="py-2.5 px-4 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50">
-                Back
-              </button>
-              <button
-                onClick={() => selectedDate && selectedTime && setStep(3)}
-                disabled={!selectedDate || !selectedTime}
-                className="py-2.5 px-6 bg-violet-600 text-white rounded-lg text-sm font-medium hover:bg-violet-700 transition disabled:opacity-50"
-              >
-                Continue
-              </button>
-            </div>
           </div>
         )}
 
         {/* Step 3: Your Details */}
         {step === 3 && (
           <div>
-            <h2 className="text-xl font-bold mb-4">Your Details</h2>
-
             {/* Summary */}
             <div className="bg-violet-50 border border-violet-200 rounded-xl p-4 mb-6">
-              <p className="font-semibold">{selectedService?.name}</p>
-              <p className="text-sm text-gray-600 flex items-center gap-3 mt-1">
-                <span className="flex items-center gap-1">
-                  <Calendar className="h-3.5 w-3.5" />
+              <p className="font-semibold text-base">{selectedService?.name}</p>
+              <div className="text-sm text-gray-600 mt-2 space-y-1">
+                <p className="flex items-center gap-1.5">
+                  <Calendar className="h-3.5 w-3.5 shrink-0" />
                   {new Date(selectedDate + "T12:00:00").toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
-                </span>
-                <span className="flex items-center gap-1">
-                  <Clock className="h-3.5 w-3.5" /> {selectedTime}
-                </span>
-              </p>
-              <p className="text-sm font-bold text-violet-600 mt-1">{currencySymbol}{Number(selectedService?.price).toFixed(0)}</p>
-              {deposit && (
-                <p className="text-xs text-amber-600 mt-1 flex items-center gap-1">
-                  <CreditCard className="h-3 w-3" />
-                  {deposit.label}: {currencySymbol}{deposit.amount.toFixed(0)} due at booking
                 </p>
+                <p className="flex items-center gap-1.5">
+                  <Clock className="h-3.5 w-3.5 shrink-0" /> {selectedTime}
+                </p>
+              </div>
+              <div className="flex items-center justify-between mt-3 pt-3 border-t border-violet-200">
+                <span className="text-sm text-gray-600">Total</span>
+                <span className="text-lg font-bold text-violet-600">{currencySymbol}{Number(selectedService?.price).toFixed(0)}</span>
+              </div>
+              {deposit && (
+                <div className="mt-2 text-xs text-amber-700 bg-amber-50 rounded-lg px-3 py-2 flex items-center gap-1.5">
+                  <CreditCard className="h-3.5 w-3.5 shrink-0" />
+                  {deposit.label}: {currencySymbol}{deposit.amount.toFixed(0)} due at booking
+                </div>
               )}
             </div>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Name *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Name *</label>
                 <input
                   type="text"
                   required
+                  autoComplete="name"
                   value={clientName}
                   onChange={(e) => setClientName(e.target.value)}
                   placeholder="Your full name"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-violet-500"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Email *</label>
                 <input
                   type="email"
                   required
+                  autoComplete="email"
+                  inputMode="email"
                   value={clientEmail}
                   onChange={(e) => setClientEmail(e.target.value)}
                   placeholder="you@example.com"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-violet-500"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Phone</label>
                 <input
                   type="tel"
+                  autoComplete="tel"
+                  inputMode="tel"
                   value={clientPhone}
                   onChange={(e) => setClientPhone(e.target.value)}
                   placeholder="e.g. +66812345678"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-violet-500"
                 />
               </div>
               {clientPhone && (
-                <label className="flex items-center gap-2 cursor-pointer">
+                <label className="flex items-start gap-3 cursor-pointer p-3 rounded-lg bg-green-50 border border-green-200">
                   <input
                     type="checkbox"
                     checked={whatsappOptIn}
                     onChange={(e) => setWhatsappOptIn(e.target.checked)}
-                    className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
+                    className="w-5 h-5 mt-0.5 text-green-600 border-gray-300 rounded focus:ring-green-500 shrink-0"
                   />
-                  <span className="text-sm text-gray-700">Send me booking updates on WhatsApp</span>
+                  <span className="text-sm text-green-900">Send me booking updates on WhatsApp</span>
                 </label>
               )}
-            </div>
-
-            <div className="flex gap-3 mt-6">
-              <button onClick={() => setStep(2)} className="py-2.5 px-4 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50">
-                Back
-              </button>
-              <button
-                onClick={handleSubmit}
-                disabled={submitting || !clientName || !clientEmail}
-                className="py-2.5 px-6 bg-violet-600 text-white rounded-lg text-sm font-medium hover:bg-violet-700 transition disabled:opacity-50"
-              >
-                {submitting ? "Booking..." : "Confirm Booking"}
-              </button>
             </div>
           </div>
         )}
 
         {/* Footer */}
         <div className="mt-12 text-center text-xs text-gray-400">
-          Powered by <span className="font-semibold text-violet-600">SpaSoft</span> &middot; spa-soft.com
+          Powered by <span className="font-semibold text-violet-600">SpaSoft</span>
         </div>
       </div>
+
+      {/* Sticky bottom action bar (mobile-first, visible on all sizes) */}
+      {step > 1 && (
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-3 md:py-4 z-20 safe-bottom">
+          <div className="max-w-2xl mx-auto flex gap-3">
+            <button
+              onClick={() => setStep(step - 1)}
+              className="py-3 px-5 border border-gray-300 rounded-lg text-sm font-semibold hover:bg-gray-50 active:scale-[0.98] transition"
+            >
+              Back
+            </button>
+            {step === 2 ? (
+              <button
+                onClick={() => selectedDate && selectedTime && setStep(3)}
+                disabled={!selectedDate || !selectedTime}
+                className="flex-1 py-3 bg-violet-600 text-white rounded-lg text-sm font-semibold hover:bg-violet-700 active:scale-[0.98] transition disabled:opacity-50"
+              >
+                Continue
+              </button>
+            ) : (
+              <button
+                onClick={handleSubmit}
+                disabled={submitting || !clientName || !clientEmail}
+                className="flex-1 py-3 bg-violet-600 text-white rounded-lg text-sm font-semibold hover:bg-violet-700 active:scale-[0.98] transition disabled:opacity-50"
+              >
+                {submitting ? "Booking..." : "Confirm Booking"}
+              </button>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
