@@ -13,6 +13,7 @@ function getSupabase() {
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const businessId = searchParams.get("business_id");
+  const branchId = searchParams.get("branch_id");
 
   if (!businessId) {
     return NextResponse.json({ error: "business_id required" }, { status: 400 });
@@ -20,33 +21,43 @@ export async function GET(request: Request) {
 
   const supabase = getSupabase();
 
-  const [{ data: services }, { data: staff }, { data: business }] = await Promise.all([
+  let staffQuery = supabase
+    .from("staff")
+    .select("id, name, color, branch_id")
+    .eq("business_id", businessId)
+    .eq("active", true)
+    .in("role", ["therapist", "manager", "owner"])
+    .order("name");
+  if (branchId) staffQuery = staffQuery.eq("branch_id", branchId);
+
+  const [{ data: services }, { data: staff }, { data: business }, { data: branches }] = await Promise.all([
     supabase
       .from("services")
       .select("id, name, description, duration, price, category")
       .eq("business_id", businessId)
       .eq("active", true)
       .order("category, name"),
-    supabase
-      .from("staff")
-      .select("id, name, color")
-      .eq("business_id", businessId)
-      .eq("active", true)
-      .in("role", ["therapist", "manager", "owner"])
-      .order("name"),
+    staffQuery,
     supabase
       .from("businesses")
       .select("name, timezone, currency, deposit_enabled, deposit_type, deposit_value")
       .eq("id", businessId)
       .single(),
+    supabase
+      .from("branches")
+      .select("id, name, address, phone")
+      .eq("business_id", businessId)
+      .eq("active", true)
+      .order("is_primary", { ascending: false })
+      .order("name"),
   ]);
 
-  return NextResponse.json({ services, staff, business: business });
+  return NextResponse.json({ services, staff, business, branches });
 }
 
 export async function POST(request: Request) {
   const body = await request.json();
-  const { business_id, service_id, staff_id, start_time, client_name, client_email, client_phone } = body;
+  const { business_id, branch_id, service_id, staff_id, start_time, client_name, client_email, client_phone } = body;
 
   if (!business_id || !service_id || !start_time || !client_name || !client_email) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -92,11 +103,25 @@ export async function POST(request: Request) {
     client = newClient;
   }
 
+  // Determine branch — use provided branch_id or fall back to primary branch
+  let effectiveBranchId: string | null = branch_id || null;
+  if (!effectiveBranchId) {
+    const { data: primary } = await supabase
+      .from("branches")
+      .select("id")
+      .eq("business_id", business_id)
+      .eq("is_primary", true)
+      .eq("active", true)
+      .single();
+    effectiveBranchId = primary?.id || null;
+  }
+
   // Create booking
   const { data: booking, error } = await supabase
     .from("bookings")
     .insert({
       business_id,
+      branch_id: effectiveBranchId,
       client_id: client?.id,
       staff_id: staff_id || null,
       service_id,

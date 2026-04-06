@@ -17,7 +17,17 @@ type Staff = {
 const roles = ["owner", "manager", "therapist", "receptionist"];
 const colors = ["#7c3aed", "#2563eb", "#059669", "#d97706", "#dc2626", "#ec4899"];
 
-export default function StaffClient({ initialStaff }: { initialStaff: Staff[] }) {
+type Branch = { id: string; name: string };
+
+export default function StaffClient({
+  initialStaff,
+  branches = [],
+  currentBranchId,
+}: {
+  initialStaff: Staff[];
+  branches?: Branch[];
+  currentBranchId?: string | null;
+}) {
   const [showModal, setShowModal] = useState(false);
   const [modalError, setModalError] = useState<string | null>(null);
   const [editingStaff, setEditingStaff] = useState<Staff | null>(null);
@@ -151,6 +161,20 @@ export default function StaffClient({ initialStaff }: { initialStaff: Staff[] })
                   ))}
                 </select>
               </div>
+              {branches.length > 0 && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Branch</label>
+                  <select
+                    name="branch_id"
+                    defaultValue={(editingStaff as any)?.branch_id || currentBranchId || ""}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+                  >
+                    {branches.map((b) => (
+                      <option key={b.id} value={b.id}>{b.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
               {!editingStaff && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Color</label>

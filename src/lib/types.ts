@@ -13,9 +13,23 @@ export type Business = {
   created_at: string;
 };
 
+export type Branch = {
+  id: string;
+  business_id: string;
+  name: string;
+  address: string | null;
+  phone: string | null;
+  email: string | null;
+  timezone: string | null;
+  is_primary: boolean;
+  active: boolean;
+  created_at: string;
+};
+
 export type Staff = {
   id: string;
   business_id: string;
+  branch_id: string | null;
   auth_user_id: string | null;
   name: string;
   email: string;
@@ -52,6 +66,7 @@ export type Client = {
 export type Booking = {
   id: string;
   business_id: string;
+  branch_id: string | null;
   client_id: string | null;
   staff_id: string | null;
   service_id: string | null;

@@ -6,6 +6,7 @@ import { Sparkles, Calendar, Clock, CheckCircle, CreditCard } from "lucide-react
 type Service = { id: string; name: string; description: string | null; duration: number; price: number; category: string | null };
 type Staff = { id: string; name: string; color: string };
 type Business = { name: string; timezone: string; currency: string; deposit_enabled?: boolean; deposit_type?: string; deposit_value?: number };
+type BranchInfo = { id: string; name: string; address: string | null; phone: string | null };
 
 export default function BookingPage() {
   const [step, setStep] = useState(1);
@@ -32,10 +33,14 @@ export default function BookingPage() {
   const [paymentComplete, setPaymentComplete] = useState(false);
 
   const [businessId, setBusinessId] = useState<string | null>(null);
+  const [branchId, setBranchId] = useState<string | null>(null);
+  const [branches, setBranches] = useState<BranchInfo[]>([]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const bid = params.get("id");
+    const br = params.get("branch");
+    if (br) setBranchId(br);
     if (!bid) {
       // Try to fetch the first business (for single-tenant demo)
       fetch("/api/book/discover")
@@ -59,19 +64,25 @@ export default function BookingPage() {
 
   useEffect(() => {
     if (!businessId) return;
-    fetch(`/api/book?business_id=${businessId}`)
+    const url = `/api/book?business_id=${businessId}${branchId ? `&branch_id=${branchId}` : ""}`;
+    fetch(url)
       .then((r) => r.json())
       .then((data) => {
         setServices(data.services || []);
         setStaff(data.staff || []);
         setBusiness(data.business);
+        setBranches(data.branches || []);
+        // If no branch selected and multiple branches exist, default to first
+        if (!branchId && data.branches && data.branches.length > 0) {
+          setBranchId(data.branches[0].id);
+        }
         setLoading(false);
       })
       .catch(() => {
         setError("Failed to load booking data.");
         setLoading(false);
       });
-  }, [businessId]);
+  }, [businessId, branchId]);
 
   // Calculate deposit amount for display
   function getDepositDisplay(): { amount: number; label: string } | null {
@@ -106,6 +117,7 @@ export default function BookingPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         business_id: businessId,
+        branch_id: branchId,
         service_id: selectedService.id,
         staff_id: selectedStaff || null,
         start_time: startTime,
@@ -307,6 +319,31 @@ export default function BookingPage() {
 
         {error && (
           <div className="mb-6 p-3 text-sm text-red-700 bg-red-50 rounded-lg">{error}</div>
+        )}
+
+        {/* Branch Selector */}
+        {branches.length > 1 && step === 1 && (
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-2">Location</label>
+            <div className="flex gap-2 flex-wrap">
+              {branches.map((b) => (
+                <button
+                  key={b.id}
+                  onClick={() => setBranchId(b.id)}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+                    branchId === b.id
+                      ? "bg-violet-600 text-white"
+                      : "bg-white border border-gray-200 hover:border-violet-300"
+                  }`}
+                >
+                  {b.name}
+                  {b.address && (
+                    <span className="block text-xs opacity-80 mt-0.5">{b.address}</span>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
         )}
 
         {/* Step 1: Choose Service */}

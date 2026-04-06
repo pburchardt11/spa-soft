@@ -19,8 +19,12 @@ import {
   X,
   CalendarClock,
   Receipt,
+  MapPin,
+  ChevronDown,
 } from "lucide-react";
 import { signOut } from "@/lib/actions/auth";
+import { setCurrentBranch } from "@/lib/actions/branches";
+import type { Branch } from "@/lib/types";
 
 const nav = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -29,15 +33,35 @@ const nav = [
   { href: "/dashboard/staff", label: "Staff", icon: UserCog },
   { href: "/dashboard/services", label: "Services", icon: Scissors },
   { href: "/dashboard/schedule", label: "Schedule", icon: CalendarClock },
+  { href: "/dashboard/branches", label: "Branches", icon: MapPin },
   { href: "/dashboard/payments", label: "Payments", icon: CreditCard },
   { href: "/dashboard/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/dashboard/billing", label: "Billing", icon: Receipt },
   { href: "/dashboard/settings", label: "Settings", icon: Settings },
 ];
 
-export default function Sidebar({ businessName, userEmail }: { businessName?: string; userEmail?: string }) {
+export default function Sidebar({
+  businessName,
+  userEmail,
+  branches = [],
+  currentBranchId,
+}: {
+  businessName?: string;
+  userEmail?: string;
+  branches?: Branch[];
+  currentBranchId?: string | null;
+}) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const [branchMenuOpen, setBranchMenuOpen] = useState(false);
+
+  const currentBranch = branches.find((b) => b.id === currentBranchId) || branches[0];
+
+  async function handleSwitchBranch(branchId: string) {
+    await setCurrentBranch(branchId);
+    setBranchMenuOpen(false);
+    window.location.reload();
+  }
 
   const sidebarContent = (
     <>
@@ -50,6 +74,39 @@ export default function Sidebar({ businessName, userEmail }: { businessName?: st
           <X className="h-5 w-5" />
         </button>
       </div>
+
+      {/* Branch Switcher */}
+      {branches.length > 0 && (
+        <div className="px-3 pt-3 relative">
+          <button
+            onClick={() => setBranchMenuOpen(!branchMenuOpen)}
+            className="w-full flex items-center justify-between gap-2 px-3 py-2 bg-gray-900 hover:bg-gray-800 rounded-lg text-sm transition"
+          >
+            <div className="flex items-center gap-2 min-w-0">
+              <MapPin className="h-4 w-4 text-violet-400 shrink-0" />
+              <span className="truncate">{currentBranch?.name || "Select branch"}</span>
+            </div>
+            {branches.length > 1 && <ChevronDown className={`h-4 w-4 shrink-0 transition ${branchMenuOpen ? "rotate-180" : ""}`} />}
+          </button>
+          {branchMenuOpen && branches.length > 1 && (
+            <div className="absolute left-3 right-3 mt-1 bg-gray-900 border border-gray-800 rounded-lg shadow-lg z-10 overflow-hidden">
+              {branches.map((branch) => (
+                <button
+                  key={branch.id}
+                  onClick={() => handleSwitchBranch(branch.id)}
+                  className={`w-full text-left px-3 py-2 text-sm transition ${
+                    branch.id === currentBranchId
+                      ? "bg-violet-600 text-white"
+                      : "hover:bg-gray-800 text-gray-300"
+                  }`}
+                >
+                  {branch.name}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
         {nav.map((item) => {

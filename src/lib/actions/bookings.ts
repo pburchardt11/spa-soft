@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { getBusinessId, getAdminClient } from "./helpers";
+import { getCurrentBranchId } from "./branches";
 import { notifyClient } from "@/lib/notifications";
 
 export async function createBooking(formData: FormData) {
@@ -49,8 +50,11 @@ export async function createBooking(formData: FormData) {
     new Date(startTime).getTime() + (service?.duration || 60) * 60000
   ).toISOString();
 
+  const branchId = await getCurrentBranchId();
+
   const { data: booking, error } = await admin.from("bookings").insert({
     business_id: businessId,
+    branch_id: branchId,
     client_id: clientId,
     staff_id: formData.get("staff_id") as string,
     service_id: serviceId,

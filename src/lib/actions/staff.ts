@@ -10,6 +10,7 @@ export async function createStaffAction(formData: FormData) {
   const admin = await getAdminClient();
   const { error } = await admin.from("staff").insert({
     business_id: businessId,
+    branch_id: (formData.get("branch_id") as string) || null,
     name: formData.get("name") as string,
     email: formData.get("email") as string,
     phone: (formData.get("phone") as string) || null,
@@ -32,6 +33,7 @@ export async function updateStaffAction(id: string, formData: FormData) {
       email: formData.get("email") as string,
       phone: (formData.get("phone") as string) || null,
       role: formData.get("role") as string,
+      branch_id: (formData.get("branch_id") as string) || null,
       active: formData.get("active") === "true",
     })
     .eq("id", id);

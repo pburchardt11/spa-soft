@@ -1,6 +1,7 @@
 import Sidebar from "@/components/sidebar";
 import { createClient } from "@/lib/supabase/server";
 import { getAdminClient } from "@/lib/actions/helpers";
+import { listBranches, getCurrentBranchId } from "@/lib/actions/branches";
 
 export default async function DashboardLayout({
   children,
@@ -26,9 +27,17 @@ export default async function DashboardLayout({
     }
   }
 
+  const branches = await listBranches();
+  const currentBranchId = await getCurrentBranchId();
+
   return (
     <div className="flex min-h-screen">
-      <Sidebar businessName={businessName} userEmail={user?.email} />
+      <Sidebar
+        businessName={businessName}
+        userEmail={user?.email}
+        branches={branches}
+        currentBranchId={currentBranchId}
+      />
       <main className="flex-1 bg-gray-50 overflow-auto pt-14 lg:pt-0">{children}</main>
     </div>
   );
