@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import DemoButton from "@/components/demo-button";
+import DemoVideo from "@/components/demo-video";
 import {
   Calendar,
   Users,
@@ -19,7 +20,6 @@ import {
   Smartphone,
   Globe,
   CheckCircle2,
-  Play,
   Zap,
   TrendingUp,
   Heart,
@@ -229,31 +229,9 @@ export default function LandingPage() {
             Watch a quick tour of the platform and see how it can transform your spa operations.
           </p>
 
-          {/* Video placeholder / embed */}
-          <div className="mt-10 relative group cursor-pointer">
-            <div className="relative rounded-2xl overflow-hidden shadow-2xl aspect-video bg-gradient-to-br from-violet-600 to-purple-700">
-              <Image
-                src="https://images.unsplash.com/photo-1540555700478-4be289fbecef?w=1600&q=80"
-                alt="SpaSoft demo preview"
-                fill
-                sizes="(max-width: 768px) 100vw, 1280px"
-                className="object-cover opacity-60"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
-
-              {/* Play button */}
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="h-20 w-20 md:h-24 md:w-24 bg-white/95 rounded-full flex items-center justify-center shadow-2xl group-hover:scale-110 transition-transform">
-                  <Play className="h-8 w-8 md:h-10 md:w-10 text-violet-600 ml-1" fill="currentColor" />
-                </div>
-              </div>
-
-              {/* Caption */}
-              <div className="absolute bottom-0 left-0 right-0 p-6 md:p-8 text-left">
-                <p className="text-white font-semibold text-lg md:text-xl">Full Product Tour</p>
-                <p className="text-white/80 text-sm mt-1">Bookings · CRM · Payments · Analytics</p>
-              </div>
-            </div>
+          {/* Demo video player */}
+          <div className="mt-10">
+            <DemoVideo />
           </div>
 
           <p className="mt-6 text-sm text-gray-500">
